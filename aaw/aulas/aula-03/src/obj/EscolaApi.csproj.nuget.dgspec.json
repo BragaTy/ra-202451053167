@@ -1,0 +1,75 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj",
+        "projectName": "EscolaApi",
+        "projectPath": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj",
+        "packagesPath": "C:\\Users\\202451053167\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\NuGet.Config",
+          "C:\\Users\\202451053167\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore.InMemory": {
+              "target": "Package",
+              "version": "[6.0.36, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.5.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
