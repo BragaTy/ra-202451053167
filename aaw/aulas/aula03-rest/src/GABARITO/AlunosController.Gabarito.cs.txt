@@ -1,0 +1,105 @@
+// GABARITO — Aula 03 (REST Design de APIs)
+// Versão refatorada da API da EscolaTech. NÃO distribuir antes da prática.
+// Para usar: substitua Controllers/EscolaController.cs por este arquivo
+// (renomeando para AlunosController.cs).
+//
+// O que foi corrigido, anti-padrão por anti-padrão:
+//   1. Verbos na URI (getAlunos, deletarAluno)  -> substantivos + método HTTP correto
+//   2. Status codes errados (200 p/ tudo)       -> 200/201/204/404 semânticos
+//   3. Aninhamento de 4 níveis                  -> máximo 2: /alunos/{id}/matriculas/{mid}
+//   4. Sem versionamento                        -> prefixo /api/v1
+//   5. Lista sem paginação                      -> ?page=&size= com metadados
+//   6. Erro em HTML                             -> ProblemDetails (RFC 9457), automático
+//      no ASP.NET Core via NotFound()/Problem()
+
+using EscolaApi.Data;
+using EscolaApi.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace EscolaApi.Controllers;
+
+[ApiController]
+[Route("api/v1/alunos")] // CORRIGE 1 e 4: substantivo no plural, versionado
+public class AlunosController : ControllerBase
+{
+    private readonly AppDbContext db;
+    public AlunosController(AppDbContext db) { this.db = db; }
+
+    // CORRIGE 5 — GET /api/v1/alunos?page=1&size=10
+    // Paginação com metadados: o cliente sabe quantas páginas existem.
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int size = 10)
+    {
+        if (page < 1 || size < 1 || size > 50)
+            return Problem(                       // CORRIGE 6: ProblemDetails
+                title: "Parâmetros de paginação inválidos",
+                detail: "page >= 1 e 1 <= size <= 50.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        var total = await db.Alunos.CountAsync();
+        var alunos = await db.Alunos
+            .OrderBy(a => a.Id)
+            .Skip((page - 1) * size)
+            .Take(size)
+            .Select(a => new { a.Id, a.Nome, a.Curso })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            page,
+            size,
+            totalItens = total,
+            totalPaginas = (int)Math.Ceiling(total / (double)size),
+            itens = alunos,
+        });
+    }
+
+    // CORRIGE 2 — GET /api/v1/alunos/{id} -> 200 | 404 (ProblemDetails automático)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var aluno = await db.Alunos.Include(a => a.Matriculas)
+                                   .FirstOrDefaultAsync(a => a.Id == id);
+        if (aluno is null) return NotFound();     // [ApiController] envelopa em ProblemDetails
+
+        return Ok(aluno);
+    }
+
+    // CORRIGE 1 e 2 — DELETE /api/v1/alunos/{id} -> 204 | 404
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var aluno = await db.Alunos.FindAsync(id);
+        if (aluno is null) return NotFound();
+
+        db.Alunos.Remove(aluno);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // CORRIGE 3 e 6 — GET /api/v1/alunos/{id}/matriculas -> 200 | 404
+    // Rota aninhada de UM nível refletindo o relacionamento de domínio.
+    [HttpGet("{id}/matriculas")]
+    public async Task<IActionResult> GetMatriculas(int id)
+    {
+        var existe = await db.Alunos.AnyAsync(a => a.Id == id);
+        if (!existe) return NotFound();           // 404 + ProblemDetails, sem HTML
+
+        var matriculas = await db.Matriculas.Where(m => m.AlunoId == id).ToListAsync();
+        return Ok(matriculas);
+    }
+
+    // CORRIGE 3 — GET /api/v1/alunos/{id}/matriculas/{matriculaId} -> 200 | 404
+    // DOIS níveis no máximo: aluno -> matrícula. Curso e semestre são ATRIBUTOS
+    // da matrícula (filtros, se preciso), não segmentos de rota.
+    [HttpGet("{id}/matriculas/{matriculaId}")]
+    public async Task<IActionResult> GetMatricula(int id, int matriculaId)
+    {
+        var matricula = await db.Matriculas
+            .FirstOrDefaultAsync(m => m.Id == matriculaId && m.AlunoId == id);
+        if (matricula is null) return NotFound();
+
+        return Ok(matricula);
+    }
+}

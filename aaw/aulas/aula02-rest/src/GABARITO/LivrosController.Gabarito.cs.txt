@@ -1,0 +1,69 @@
+// GABARITO — Aula 02 (REST Fundamentos)
+// Solução completa do LivrosController. NÃO distribuir antes da prática.
+// Para usar: substitua o conteúdo de Controllers/LivrosController.cs por este.
+
+using BibliotecaApi.Models;
+using BibliotecaApi.Repositories;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BibliotecaApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class LivrosController : ControllerBase
+{
+    private readonly LivroRepository _repository;
+
+    public LivrosController(LivroRepository repository)
+    {
+        _repository = repository;
+    }
+
+    // PASSO 1 — GET api/livros -> 200
+    [HttpGet]
+    public ActionResult<List<Livro>> GetAll()
+    {
+        return Ok(_repository.GetAll());
+    }
+
+    // PASSO 2 — GET api/livros/{id} -> 200 | 404
+    [HttpGet("{id}")]
+    public ActionResult<Livro> GetById(int id)
+    {
+        var livro = _repository.GetById(id);
+        if (livro is null) return NotFound();
+
+        return Ok(livro);
+    }
+
+    // PASSO 3 — POST api/livros -> 201 + Location | 400 (validação automática do [ApiController])
+    [HttpPost]
+    public ActionResult<Livro> Create(Livro livro)
+    {
+        var criado = _repository.Create(livro);
+        return CreatedAtAction(nameof(GetById), new { id = criado.Id }, criado);
+    }
+
+    // PASSO 4 — PUT api/livros/{id} -> 200 | 404
+    [HttpPut("{id}")]
+    public ActionResult<Livro> Update(int id, Livro livro)
+    {
+        var atualizado = _repository.Update(id, livro);
+        if (atualizado is null) return NotFound();
+
+        return Ok(atualizado);
+    }
+
+    // PASSO 5 — DELETE api/livros/{id} -> 204 | 404
+    // Idempotência na prática: a PRIMEIRA chamada remove e retorna 204;
+    // a SEGUNDA retorna 404 porque o recurso não existe mais — o estado do
+    // servidor não muda em chamadas repetidas (esse é o ponto da discussão).
+    [HttpDelete("{id}")]
+    public ActionResult Delete(int id)
+    {
+        var removido = _repository.Delete(id);
+        if (!removido) return NotFound();
+
+        return NoContent();
+    }
+}
