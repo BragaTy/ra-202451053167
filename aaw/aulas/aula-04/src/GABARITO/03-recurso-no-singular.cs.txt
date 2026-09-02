@@ -1,0 +1,76 @@
+================================================================================
+GABARITO 03 — RECURSO NO SINGULAR (nomenclatura inconsistente)
+Endpoint auditado: GET /api/v1/pet/{id}
+Slides: 5 ("Substantivos: usuários, faturas, pedidos") e 8 ("Principais ERROS")
+================================================================================
+
+O ERRO
+------
+A API usa `/pets` em um lugar (endpoints 05, 06, 10) e `/pet` em outro.
+É exatamente o par do slide 8:
+
+    http://servicorest.com.br/produto    (singular em um endpoint)
+    http://servicorest.com.br/clientes   (plural em outro)
+
+Por que isso importa, se "funciona"?
+
+  - O cliente da API perde a previsibilidade: ele precisa CONSULTAR a
+    documentação para cada rota, em vez de deduzir. A promessa da Interface
+    Uniforme é "curva de aprendizado mínima" (slide 4) — inconsistência
+    destrói exatamente isso.
+  - O modelo mental correto é: `/pets` é a COLEÇÃO; `/pets/7` é UM elemento
+    dessa coleção. `/pet/7` sugere que existe um recurso chamado "pet"
+    diferente da coleção "pets" — sugere uma segunda entidade que não existe.
+  - Some-se a isso o fato de a API já ter DUAS rotas para a mesma coisa
+    (`/pet/{id}` e `/pets/{id}`) com comportamentos diferentes: um devolve 404
+    quando não acha, o outro devolve 200 (ver gabarito 06). Dois endpoints,
+    duas verdades sobre o mesmo recurso.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/pet/{id:int}")]
+    public IActionResult FichaDoPet(int id)
+    {
+        var pet = _store.BuscarPet(id);
+        if (pet is null) return NotFound();
+        return Ok(pet);
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // Um único endpoint para "obter um pet", com o recurso no plural,
+    // igual a todo o resto da API. A rota /pet/{id} deixa de existir.
+    [HttpGet("api/v1/pets/{id:int}", Name = "ObterPet")]
+    public ActionResult<Pet> ObterPet(int id)
+    {
+        var pet = _store.BuscarPet(id);
+        if (pet is null)
+        {
+            return Problem(
+                title: "Pet não encontrado.",
+                detail: $"Não existe pet com id {id}.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/pets/{id}");
+        }
+
+        return Ok(pet);
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    curl -i http://localhost:5302/api/v1/pet/9       # 200 — singular
+    curl -i http://localhost:5302/api/v1/pets/9      # 200 — plural, MESMO recurso
+    curl -i http://localhost:5302/api/v1/pet/999999  # 404
+    curl -i http://localhost:5302/api/v1/pets/999999 # 200 (!) — ver gabarito 06
+
+Pergunta: qual das duas rotas o app mobile deve usar? E a integração do parceiro?
+Se a resposta é "depende", a interface não é uniforme.
+
+
+REGRA PRÁTICA DA DISCIPLINA
+---------------------------
+Substantivo, sempre plural, sempre kebab-case:
+    /pets  /tutores  /consultas  /banhos-e-tosas  /tabela-de-precos

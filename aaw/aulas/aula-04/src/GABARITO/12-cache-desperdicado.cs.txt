@@ -1,0 +1,94 @@
+================================================================================
+GABARITO 12 — CACHEABILITY DESPERDIÇADA (no-store em dado que quase não muda)
+Endpoint auditado: GET /api/v1/tabela-de-precos
+Slide: 11 ("Cacheability: ETag e Cache-Control")
+================================================================================
+
+O ERRO
+------
+A tabela de preços é reajustada UMA VEZ POR ANO — e a resposta diz:
+
+    Cache-Control: no-store, no-cache, must-revalidate
+    Pragma: no-cache
+
+Ou seja: o servidor proíbe explicitamente qualquer cache, em todo lugar
+(navegador, CDN, proxy reverso). Toda tela de serviços de todo aplicativo,
+de todo usuário, refaz a mesma consulta ao banco para receber os mesmos seis
+preços de sempre. Repare também que não há `ETag` nem `Last-Modified`: não
+existe nem a possibilidade de o cliente perguntar "mudou desde a última vez?".
+
+O `no-store` tem lugar — dado sensível e personalizado (extrato bancário,
+token, carrinho do usuário). Uma tabela de preços pública é o oposto disso.
+
+O benefício que está sendo jogado fora (slide 11): *"redução monumental na
+latência de rede e alívio na carga do banco de dados principal"*.
+
+Vocabulário mínimo:
+    Cache-Control: public, max-age=3600   → pode guardar por 1h, para qualquer um
+    ETag: "precos-2026-v3"                → impressão digital desta versão
+    If-None-Match: "precos-2026-v3"       → o cliente pergunta "mudou?"
+    304 Not Modified                      → "não mudou" (resposta SEM corpo)
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/tabela-de-precos")]
+    public IActionResult TabelaDePrecos()
+    {
+        Response.Headers[HeaderNames.CacheControl] = "no-store, no-cache, must-revalidate";
+        Response.Headers[HeaderNames.Pragma] = "no-cache";
+        return Ok(_store.TabelaDePrecos);
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    [HttpGet("api/v1/tabela-de-precos")]
+    [ProducesResponseType(typeof(List<ItemDePreco>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    public IActionResult TabelaDePrecos()
+    {
+        // A versão sobe quando o preço é reajustado — é a identidade do conteúdo.
+        var etag = $"\"precos-v{_store.VersaoDaTabelaDePrecos}\"";
+
+        // O cliente já tem esta versão? Devolve 304, sem corpo, sem custo.
+        var enviadoPeloCliente = Request.Headers[HeaderNames.IfNoneMatch].ToString();
+        if (enviadoPeloCliente.Split(',').Select(v => v.Trim()).Contains(etag))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        Response.Headers[HeaderNames.ETag] = etag;
+        Response.Headers[HeaderNames.CacheControl] = "public, max-age=3600";
+
+        return Ok(_store.TabelaDePrecos);
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Antes — o servidor proíbe cachear um dado que muda uma vez por ano:
+    curl -i http://localhost:5302/api/v1/tabela-de-precos | head -8
+    # Cache-Control: no-store, no-cache, must-revalidate
+    # (sem ETag)
+
+    # Depois — o padrão correto, já implementado na API do Café Newton:
+    curl -i http://localhost:5301/api/v1/cafes/1 | head -8
+    # Cache-Control: public, max-age=60
+    # ETag: "cafe-1-v1"
+
+    # E a segunda chamada, com o ETag na mão, não transfere corpo nenhum:
+    curl -i -H 'If-None-Match: "cafe-1-v1"' http://localhost:5301/api/v1/cafes/1
+    # HTTP/1.1 304 Not Modified
+
+    # Prove que o ETag acompanha a mudança do recurso:
+    curl -s -X PATCH http://localhost:5301/api/v1/cafes/1 \
+         -H "Content-Type: application/json" -d '{"preco":12.90}' > /dev/null
+    curl -i -H 'If-None-Match: "cafe-1-v1"' http://localhost:5301/api/v1/cafes/1
+    # HTTP/1.1 200 OK  +  ETag: "cafe-1-v2"   ← mudou, então vem o corpo novo
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → ObterPorId()
+CafeteriaApi/Models/Cafe.cs → o campo Versao, que alimenta o ETag

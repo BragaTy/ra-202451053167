@@ -1,0 +1,90 @@
+================================================================================
+GABARITO 06 — ERRO DEVOLVIDO COMO SUCESSO (200 com {"erro": ...})
+Endpoint auditado: GET /api/v1/pets/{id} com um id inexistente
+Slide: 2 ("Status Codes") — e o princípio da Interface Uniforme (slide 4)
+================================================================================
+
+O ERRO
+------
+O recurso não existe, e mesmo assim a API responde **200 OK** com um corpo
+{"erro": "Pet nao encontrado"}. O status code virou decoração.
+
+Por que isso é grave:
+
+  - O status code é a parte da resposta que TODA a infraestrutura entende sem
+    ler o corpo: proxies, CDNs, gateways, dashboards de monitoramento,
+    bibliotecas HTTP, retry policies. Um 200 mentiroso é cacheado como sucesso,
+    contabilizado como sucesso e logado como sucesso.
+  - O cliente é obrigado a inspecionar o CORPO para saber se deu certo — e a
+    fazer isso de um jeito diferente para cada API que consome. Adeus,
+    "curva de aprendizado mínima".
+  - Seu painel de erros vai mostrar 100% de disponibilidade enquanto os
+    usuários veem tela em branco. Erro que não aparece em métrica não é
+    corrigido.
+
+Regra: a família do status é o contrato.
+    2xx → deu certo
+    4xx → o cliente errou (id inexistente, corpo inválido, sem permissão)
+    5xx → o servidor errou
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/pets/{id:int}")]
+    public IActionResult ObterPet(int id)
+    {
+        var pet = _store.BuscarPet(id);
+
+        if (pet is null)
+        {
+            return Ok(new { erro = "Pet nao encontrado", id });   // 200 mentiroso
+        }
+
+        return Ok(pet);
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // 404 de verdade, com corpo no formato RFC 7807 (application/problem+json):
+    // legível por humano E por máquina, e é o padrão que o ASP.NET já produz.
+    [HttpGet("api/v1/pets/{id:int}", Name = "ObterPet")]
+    [ProducesResponseType(typeof(Pet), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<Pet> ObterPet(int id)
+    {
+        var pet = _store.BuscarPet(id);
+        if (pet is null)
+        {
+            return Problem(
+                title: "Pet não encontrado.",
+                detail: $"Não existe pet com id {id}.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/pets/{id}");
+        }
+
+        return Ok(pet);
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Antes:
+    curl -i http://localhost:5302/api/v1/pets/999999
+    # HTTP/1.1 200 OK
+    # {"erro":"Pet nao encontrado","id":999999}
+
+    # Depois (API correta):
+    curl -i http://localhost:5301/api/v1/cafes/999999
+    # HTTP/1.1 404 Not Found
+    # Content-Type: application/problem+json
+    # {"type":"...","title":"Café não encontrado.","status":404,"detail":"..."}
+
+Exercício rápido: peça para a turma escrever o `if` do lado do cliente nos dois
+casos. No primeiro, é preciso conhecer o nome do campo "erro". No segundo,
+`if (response.status === 404)` — funciona para qualquer API do mundo.
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → CafeNaoEncontrado()

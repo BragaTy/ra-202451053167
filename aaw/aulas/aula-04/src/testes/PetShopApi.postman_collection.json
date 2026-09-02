@@ -1,0 +1,462 @@
+{
+  "info": {
+    "_postman_id": "a1c0f3e2-0301-4a11-9c31-pet000000002",
+    "name": "PetHouse API - CACE OS 12 ERROS",
+    "description": "API da Aula 03.1 para auditoria. Tudo funciona - e cada endpoint viola UMA regra REST. Rode 'dotnet run' em src/PetShopApi. Para cada requisicao, observe: URI, metodo, status code, headers e corpo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5302",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Endpoints 01 a 12 (auditar em ordem)",
+      "item": [
+        {
+          "name": "01 - POST /api/v1/getPets",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/getPets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "getPets"
+              ]
+            },
+            "description": "Olhe a URI e o metodo. O que 'get' faz no caminho? E por que POST?"
+          },
+          "response": []
+        },
+        {
+          "name": "02 - GET /api/v1/deletarPet?id=7",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/deletarPet?id=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "deletarPet"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "7"
+                }
+              ]
+            },
+            "description": "ATENCAO: rode o '03' antes e depois deste. O que um GET acabou de fazer?"
+          },
+          "response": []
+        },
+        {
+          "name": "03 - GET /api/v1/pet/7",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pet/7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pet",
+                "7"
+              ]
+            },
+            "description": "Compare esta rota com a do endpoint 06. Qual o padrao da API?"
+          },
+          "response": []
+        },
+        {
+          "name": "04a - GET /api/v1/banhosTosa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/banhosTosa?page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "banhosTosa"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Compare a grafia desta rota com a do 04b e a do 12."
+          },
+          "response": []
+        },
+        {
+          "name": "04b - GET /api/v1/tutores_vip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tutores_vip?page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tutores_vip"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Alem da grafia: 'vip' e um recurso mesmo, ou um filtro?"
+          },
+          "response": []
+        },
+        {
+          "name": "05 - POST /api/v1/pets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pets"
+              ]
+            },
+            "description": "Qual status code voltou? Procure o header Location na resposta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Bidu\",\n  \"especie\": \"cachorro\",\n  \"raca\": \"SRD\",\n  \"tutorId\": 1,\n  \"pesoEmKg\": 8.5,\n  \"nascimento\": \"2024-01-10T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "06 - GET /api/v1/pets/999999",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pets/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pets",
+                "999999"
+              ]
+            },
+            "description": "O pet nao existe. Que status code a API devolveu?"
+          },
+          "response": []
+        },
+        {
+          "name": "07 - GET /api/pets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets?page=1&size=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Compare a URI e os NOMES DOS CAMPOS com os do endpoint 01."
+          },
+          "response": []
+        },
+        {
+          "name": "08 - GET exame (5 niveis)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/petshops/1/clientes/5/pets/9/consultas/12/exames/6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "petshops",
+                "1",
+                "clientes",
+                "5",
+                "pets",
+                "9",
+                "consultas",
+                "12",
+                "exames",
+                "6"
+              ]
+            },
+            "description": "Quantos ids o app precisa conhecer? Tente trocar os tres primeiros por 99."
+          },
+          "response": []
+        },
+        {
+          "name": "09 - GET /api/v1/consultas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/consultas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "consultas"
+              ]
+            },
+            "description": "Repare no tamanho e no tempo da resposta (rodape do Postman)."
+          },
+          "response": []
+        },
+        {
+          "name": "10a - PUT vacinas (1a chamada)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pets/12/vacinas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pets",
+                "12",
+                "vacinas"
+              ]
+            },
+            "description": "Conte quantas vacinas voltaram.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"V10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10b - PUT vacinas (2a chamada, corpo identico)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pets/12/vacinas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pets",
+                "12",
+                "vacinas"
+              ]
+            },
+            "description": "Mesmo corpo, de novo. Conte outra vez. PUT deveria ser idempotente...",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"V10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11a - POST /api/v1/sessao (usuario Ana)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sessao"
+              ]
+            },
+            "description": "Faca login como Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"Ana\",\n  \"senha\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11b - GET /api/v1/meus-pets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meus-pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meus-pets"
+              ]
+            },
+            "description": "De quem sao esses pets? Agora peca ao colega ao lado que rode o 11c e repita esta chamada."
+          },
+          "response": []
+        },
+        {
+          "name": "11c - POST /api/v1/sessao (usuario Bruno)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sessao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sessao"
+              ]
+            },
+            "description": "Segundo login. Volte ao 11b sem refazer o login da Ana.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"Bruno\",\n  \"senha\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "12 - GET /api/v1/tabela-de-precos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tabela-de-precos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tabela-de-precos"
+              ]
+            },
+            "description": "Veja os headers da resposta. Esse dado muda uma vez por ano."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

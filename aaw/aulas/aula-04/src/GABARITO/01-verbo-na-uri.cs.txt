@@ -1,0 +1,71 @@
+================================================================================
+GABARITO 01 — VERBO NA URI (e POST usado para leitura)
+Endpoint auditado: POST /api/v1/getPets
+Slides: 8 ("Principais ERROS") e 9 ("Certo vs Errado")
+================================================================================
+
+O ERRO
+------
+A URI carrega a AÇÃO ("get") e o método HTTP carrega outra ("POST").
+Duas violações da Interface Uniforme na mesma linha:
+
+  1. A URI deve identificar O QUE (o recurso: pets), nunca O QUE FAZER.
+     "getPets" é exatamente o `POST /api/getProdutos` do slide 9.
+  2. Ler uma coleção é GET. POST não é seguro nem idempotente: quem lê a
+     documentação assume que esse endpoint CRIA alguma coisa.
+
+Consequências reais: o navegador e os proxies não podem cachear a resposta
+(POST não é cacheável), e o cliente perde a previsibilidade que faz uma API
+REST ser aprendida em 5 minutos.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpPost("api/v1/getPets")]
+    public IActionResult GetPets()
+    {
+        var pets = _store.Pets.Take(50).ToList();
+        return Ok(pets);
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // A URI vira o substantivo no plural; a ação "ler" já é o próprio GET.
+    // De quebra, a coleção passa a ser paginada (ver gabarito 09).
+    [HttpGet("api/v1/pets")]
+    public ActionResult<Pagina<Pet>> ListarPets(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
+    {
+        if (page < 1 || size < 1 || size > 100)
+        {
+            return Problem(
+                title: "Parâmetro de paginação inválido.",
+                detail: "'page' começa em 1 e 'size' deve estar entre 1 e 100.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var total = _store.Pets.Count;
+        var itens = _store.Pets.Skip((page - 1) * size).Take(size).ToList();
+
+        return Ok(new Pagina<Pet> { Page = page, Size = size, Total = total, Items = itens });
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Antes: só funciona com POST — tente GET e veja o 405 Method Not Allowed
+    curl -i -X GET  http://localhost:5302/api/v1/getPets     # 405
+    curl -i -X POST http://localhost:5302/api/v1/getPets     # 200 (lendo com POST!)
+
+    # Depois (na API correta, o mesmo padrão já implementado):
+    curl -i "http://localhost:5301/api/v1/cafes?page=1&size=3"   # 200
+
+Pergunta para a turma: se "getPets" é POST, como você nomearia o endpoint que
+CRIA um pet? "postPets"? É aí que o design desmorona.
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → método Listar()

@@ -1,0 +1,101 @@
+================================================================================
+GABARITO 10 — PUT NÃO IDEMPOTENTE (acumula a cada chamada)
+Endpoint auditado: PUT /api/v1/pets/{id}/vacinas
+Slide: 2 ("Métodos idempotentes: não altera o estado do recurso se executado
+          mais de uma vez — GET, PUT, DELETE")
+================================================================================
+
+O ERRO
+------
+Cada `PUT` ADICIONA uma vacina à lista. Chamar três vezes com o MESMO corpo
+cria três vacinas. Isso é comportamento de POST, não de PUT.
+
+Por que a idempotência importa de verdade:
+
+  - A internet perde pacotes. O celular entra no elevador no meio da requisição.
+    O cliente não sabe se a chamada chegou — e a resposta certa para "não sei"
+    é RETENTAR. Toda biblioteca HTTP, todo gateway, todo service mesh retenta
+    automaticamente métodos idempotentes.
+  - Com este endpoint, uma retentativa duplica o registro. O pet aparece com
+    quatro doses de V10 aplicadas no mesmo minuto.
+  - O usuário que clica duas vezes no botão (porque a tela travou) gera dois
+    registros. Ninguém percebe até a auditoria da vacinação.
+
+Definição precisa: idempotente NÃO quer dizer "devolve a mesma resposta" —
+quer dizer que o ESTADO DO SERVIDOR depois de N chamadas idênticas é o mesmo
+que depois de 1.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpPut("api/v1/pets/{id:int}/vacinas")]
+    public IActionResult RegistrarVacina(int id, [FromBody] Vacina vacina)
+    {
+        var pet = _store.BuscarPet(id);
+        if (pet is null) return NotFound();
+
+        _store.RegistrarVacina(id, vacina.Nome);    // ADICIONA sempre
+        return Ok(_store.VacinasDoPet(id));
+    }
+
+
+CÓDIGO CORRIGIDO — duas leituras possíveis, escolha a que descreve o negócio
+---------------------------------------------------------------------------
+(A) "Registrar mais uma aplicação de vacina" = CRIAR um recurso novo → POST.
+    Cada aplicação é um evento distinto e realmente pode repetir.
+
+    [HttpPost("api/v1/pets/{id:int}/vacinas")]
+    public ActionResult<Vacina> AplicarVacina(int id, [FromBody] Vacina vacina)
+    {
+        if (_store.BuscarPet(id) is null)
+        {
+            return Problem(title: "Pet não encontrado.",
+                           statusCode: StatusCodes.Status404NotFound,
+                           instance: $"/api/v1/pets/{id}");
+        }
+
+        var criada = _store.RegistrarVacina(id, vacina.Nome);
+
+        // 201 + Location do recurso criado (ver gabarito 05)
+        return CreatedAtAction(nameof(ObterVacina), new { id, vacinaId = criada.Id }, criada);
+    }
+
+(B) "Definir a carteira de vacinação do pet" = SUBSTITUIR a coleção → PUT.
+    Mandar dez vezes o mesmo corpo deixa exatamente a mesma carteira.
+
+    [HttpPut("api/v1/pets/{id:int}/vacinas")]
+    public ActionResult<List<Vacina>> SubstituirCarteira(int id, [FromBody] List<Vacina> carteira)
+    {
+        if (_store.BuscarPet(id) is null)
+        {
+            return Problem(title: "Pet não encontrado.",
+                           statusCode: StatusCodes.Status404NotFound,
+                           instance: $"/api/v1/pets/{id}");
+        }
+
+        _store.SubstituirCarteira(id, carteira);    // apaga as antigas e grava as enviadas
+        return Ok(_store.VacinasDoPet(id));
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Chame TRÊS vezes, com o corpo idêntico:
+    for i in 1 2 3; do
+      curl -s -X PUT http://localhost:5302/api/v1/pets/12/vacinas \
+           -H "Content-Type: application/json" -d '{"nome":"V10"}' \
+        | python -c "import sys,json;print('vacinas:',len(json.load(sys.stdin)))"
+    done
+    # vacinas: 2 → 3 → 4    (o pet ganhou uma dose por retentativa)
+
+    # Compare com o PUT da API correta — chame quantas vezes quiser:
+    curl -s -X PUT http://localhost:5301/api/v1/cafes/10 \
+         -H "Content-Type: application/json" \
+         -d '{"nome":"Coado Reserva","origem":"Cerrado Mineiro","torra":"clara","preco":11.0,"disponivel":true}'
+    # O recurso fica sempre no MESMO estado.
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → Substituir() (PUT que substitui)
+CafeteriaApi/Controllers/PedidoItensController.cs → Adicionar() (POST que acumula)

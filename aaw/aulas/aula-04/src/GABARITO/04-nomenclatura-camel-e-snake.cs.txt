@@ -1,0 +1,74 @@
+================================================================================
+GABARITO 04 — CAMEL CASE E SNAKE CASE NA URI
+Endpoints auditados: GET /api/v1/banhosTosa  e  GET /api/v1/tutores_vip
+Slides: 7 (tabela de convenções) e 8 ("Principais ERROS")
+================================================================================
+
+O ERRO
+------
+Três padrões de nomenclatura convivendo na MESMA API:
+
+    /api/v1/banhosTosa      → camel case      (slide 8: "processosAdministrativos")
+    /api/v1/tutores_vip     → snake case      (slide 8: "processos_judiciais")
+    /api/v1/tabela-de-precos → kebab case     (o único correto)
+
+Por que kebab-case é o padrão para URIs:
+
+  - URIs são case-sensitive no path (RFC 3986). "banhosTosa" e "banhostosa"
+    são recursos DIFERENTES para o servidor — e todo cliente vai errar o "T"
+    maiúsculo mais cedo ou mais tarde.
+  - O underscore some quando a URL é exibida sublinhada (link em documentação,
+    e-mail, chat): "tutores_vip" vira "tutores vip" na leitura.
+  - Buscadores e ferramentas tratam o hífen como separador de palavras.
+
+Repare que o erro NÃO é usar camelCase — é a INCONSISTÊNCIA. camelCase é a
+convenção correta para os campos do JSON (o .NET já serializa assim); ela só
+não vale para o path da URI.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/banhosTosa")]
+    public IActionResult BanhosTosa([FromQuery] int page = 1, [FromQuery] int size = 20) { ... }
+
+    [HttpGet("api/v1/tutores_vip")]
+    public IActionResult TutoresVip([FromQuery] int page = 1, [FromQuery] int size = 20) { ... }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // 1) kebab-case, substantivo no plural.
+    [HttpGet("api/v1/banhos-e-tosas")]
+    public ActionResult<Pagina<BanhoTosa>> ListarBanhosETosas(
+        [FromQuery] int page = 1, [FromQuery] int size = 20) { ... }
+
+    // 2) "vip" não é um recurso: é um FILTRO sobre tutores.
+    //    Vira query string do próprio recurso (slide 9, última linha),
+    //    e some um endpoint da API.
+    //        GET /api/v1/tutores?vip=true
+    [HttpGet("api/v1/tutores")]
+    public ActionResult<Pagina<Tutor>> ListarTutores(
+        [FromQuery] bool? vip = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
+    {
+        IEnumerable<Tutor> consulta = _store.Tutores;
+        if (vip is not null) consulta = consulta.Where(t => t.Vip == vip.Value);
+
+        var todos = consulta.ToList();
+        var itens = todos.Skip((page - 1) * size).Take(size).ToList();
+
+        return Ok(new Pagina<Tutor> { Page = page, Size = size, Total = todos.Count, Items = itens });
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    curl -i "http://localhost:5302/api/v1/banhosTosa?size=2"     # 200
+    curl -i "http://localhost:5302/api/v1/banhostosa?size=2"     # 404 — só mudou o "T"
+    curl -i "http://localhost:5302/api/v1/tutores_vip?size=2"    # 200
+    curl -i "http://localhost:5302/api/v1/tutores-vip?size=2"    # 404
+
+Três padrões numa API de 12 endpoints. Numa de 300, o cliente desiste e liga
+para o suporte — que é o oposto da frase do encerramento da aula:
+"uma boa API é aquela que o próximo dev usa sem precisar te perguntar nada".

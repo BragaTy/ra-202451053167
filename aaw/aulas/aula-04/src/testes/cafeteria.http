@@ -1,0 +1,123 @@
+### Café Newton API — a API CORRETA (Aula 03.1)
+# Como usar: abra este arquivo no VS Code com a extensão "REST Client"
+# (humao.rest-client) e clique em "Send Request" acima de cada bloco.
+# No Visual Studio 2022 e no Rider o suporte é nativo.
+# Antes: cd src/CafeteriaApi && dotnet run
+
+@baseUrl = http://localhost:5301
+
+########################################################################
+# 1. Cafés — o caminho feliz
+########################################################################
+
+### 200 — lista paginada (envelope page/size/total/items)
+GET {{baseUrl}}/api/v1/cafes?page=1&size=5
+
+### 200 — filtro + ordenação são query strings DO recurso
+GET {{baseUrl}}/api/v1/cafes?torra=escura&sort=-preco&size=5
+
+### 200 — um café, com ETag e Cache-Control nos headers
+GET {{baseUrl}}/api/v1/cafes/1
+
+### 304 — o cliente já tem esta versão (cole aqui o ETag da resposta acima)
+GET {{baseUrl}}/api/v1/cafes/1
+If-None-Match: "cafe-1-v1"
+
+### 201 + Location — criação
+POST {{baseUrl}}/api/v1/cafes
+Content-Type: application/json
+
+{
+  "nome": "Espresso da Aula",
+  "origem": "Sul de Minas",
+  "torra": "media",
+  "preco": 9.5,
+  "disponivel": true
+}
+
+### 200 — PUT substitui (idempotente: repita à vontade)
+PUT {{baseUrl}}/api/v1/cafes/2
+Content-Type: application/json
+
+{
+  "nome": "Coado Reserva",
+  "origem": "Cerrado Mineiro",
+  "torra": "clara",
+  "preco": 11.0,
+  "disponivel": true
+}
+
+### 200 — PATCH altera só o que foi enviado
+PATCH {{baseUrl}}/api/v1/cafes/2
+Content-Type: application/json
+
+{
+  "preco": 13.75
+}
+
+### 204 — DELETE (rode uma segunda vez: 404)
+DELETE {{baseUrl}}/api/v1/cafes/3
+
+########################################################################
+# 2. Os casos que ensinam
+########################################################################
+
+### 404 — corpo em application/problem+json (RFC 7807)
+GET {{baseUrl}}/api/v1/cafes/99999
+
+### 400 — validação automática: falta o campo "nome"
+POST {{baseUrl}}/api/v1/cafes
+Content-Type: application/json
+
+{
+  "origem": "Sul de Minas",
+  "torra": "media",
+  "preco": 9.5
+}
+
+### 400 — o servidor define o teto de size (máx. 100)
+GET {{baseUrl}}/api/v1/cafes?size=100000
+
+########################################################################
+# 3. Pedidos e itens — aninhamento de 1 nível
+########################################################################
+
+### 200 — pedidos paginados
+GET {{baseUrl}}/api/v1/pedidos?page=1&size=5
+
+### 200 — filtro por status
+GET {{baseUrl}}/api/v1/pedidos?status=entregue&size=5
+
+### 201 + Location — abre um pedido (anote o id devolvido)
+POST {{baseUrl}}/api/v1/pedidos
+Content-Type: application/json
+
+{
+  "cliente": "Turma de ADS"
+}
+
+### 200 — os itens DO pedido 1
+GET {{baseUrl}}/api/v1/pedidos/1/itens
+
+### 201 + Location — adiciona um item ao pedido 1
+POST {{baseUrl}}/api/v1/pedidos/1/itens
+Content-Type: application/json
+
+{
+  "cafeId": 5,
+  "quantidade": 2
+}
+
+### 200 — muda o status (não existe /pedidos/1/entregar!)
+PATCH {{baseUrl}}/api/v1/pedidos/1
+Content-Type: application/json
+
+{
+  "status": "entregue"
+}
+
+### 204 — remove um item do pedido
+DELETE {{baseUrl}}/api/v1/pedidos/1/itens/1
+
+### 404 — pedido inexistente
+GET {{baseUrl}}/api/v1/pedidos/9999

@@ -1,0 +1,79 @@
+================================================================================
+GABARITO 05 — CRIAÇÃO RESPONDENDO 200 E SEM HEADER LOCATION
+Endpoint auditado: POST /api/v1/pets
+Slide: 2 ("Status Codes: 200 – ok, 300 – redirect, 400 – bad request, 500 – error")
+================================================================================
+
+O ERRO
+------
+O endpoint cria o recurso e responde **200 OK**, sem o header **Location**.
+
+  - 200 significa "sua requisição foi processada e aqui está o resultado".
+    201 Created significa "um RECURSO NOVO passou a existir" — e vem com o
+    endereço dele no header `Location`. São informações diferentes.
+  - Sem `Location`, o cliente precisa adivinhar a URI do que acabou de criar:
+    ou vasculha o corpo procurando um campo "id" (que pode se chamar id, _id,
+    codigo, uuid...), ou monta a URL na mão. Os dois acoplam o cliente ao
+    formato interno da API.
+  - Ferramentas automáticas (SDKs gerados a partir do OpenAPI, testes de
+    contrato, clientes HTTP genéricos) usam o `Location` para encadear a
+    próxima chamada. Sem ele, nada disso funciona sozinho.
+
+Mapa mínimo de status para um CRUD (o que a turma tem de saber de cor):
+    200 OK              leitura/atualização bem-sucedida
+    201 Created         criação — SEMPRE com Location
+    204 No Content      sucesso sem corpo (DELETE, por exemplo)
+    400 Bad Request     o cliente mandou algo inválido
+    404 Not Found       o recurso não existe
+    500 Internal Error  o servidor quebrou (culpa nossa, não do cliente)
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpPost("api/v1/pets")]
+    public IActionResult CadastrarPet([FromBody] Pet pet)
+    {
+        var criado = _store.CriarPet(pet);
+        return Ok(criado);          // 200, sem Location
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // CreatedAtAction devolve 201 e monta o header Location apontando para a
+    // rota nomeada do GET — o cliente já sai da criação sabendo onde buscar.
+    [HttpPost("api/v1/pets")]
+    [ProducesResponseType(typeof(Pet), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<Pet> CadastrarPet([FromBody] Pet pet)
+    {
+        var criado = _store.CriarPet(pet);
+
+        return CreatedAtAction(nameof(ObterPet), new { id = criado.Id }, criado);
+    }
+
+    // Requer que o GET tenha nome/assinatura compatível:
+    //     [HttpGet("api/v1/pets/{id:int}", Name = "ObterPet")]
+    //     public ActionResult<Pet> ObterPet(int id) { ... }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Antes — repare que NÃO existe linha "Location:" na resposta:
+    curl -i -X POST http://localhost:5302/api/v1/pets \
+         -H "Content-Type: application/json" \
+         -d '{"nome":"Teste","especie":"gato","raca":"SRD","tutorId":1}'
+    # HTTP/1.1 200 OK
+
+    # Depois — na API correta, o mesmo cenário:
+    curl -i -X POST http://localhost:5301/api/v1/cafes \
+         -H "Content-Type: application/json" \
+         -d '{"nome":"Espresso da Aula","origem":"Sul de Minas","torra":"media","preco":9.5}'
+    # HTTP/1.1 201 Created
+    # Location: http://localhost:5301/api/v1/cafes/241
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → método Criar()
+CafeteriaApi/Controllers/PedidoItensController.cs → método Adicionar()

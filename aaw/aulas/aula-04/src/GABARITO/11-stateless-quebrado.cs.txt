@@ -1,0 +1,111 @@
+================================================================================
+GABARITO 11 — STATELESS QUEBRADO (sessão guardada no servidor)
+Endpoints auditados: POST /api/v1/sessao  +  GET /api/v1/meus-pets
+Slide: 10 ("Statelessness")
+================================================================================
+
+O ERRO
+------
+O "login" grava o usuário da vez em um campo ESTÁTICO do controller, e o
+`/meus-pets` lê esse campo para decidir de quem são os pets. O servidor passou
+a LEMBRAR do cliente entre requisições.
+
+    private static string? _usuarioDaVez;
+    private static int _tutorDaVez;
+
+Consequências — e a segunda é catastrófica:
+
+  1. Escalabilidade morre. Com dois servidores atrás de um balanceador, o login
+     acontece no servidor A e o `/meus-pets` cai no servidor B, que não conhece
+     ninguém → 401 aleatório. A solução comum ("sticky session") amarra o
+     usuário a uma máquina e destrói o benefício do slide 10:
+     *"escalabilidade horizontal ilimitada; o balanceador roteia livremente"*.
+     Reiniciar um pod derruba todo mundo que estava logado nele.
+
+  2. O campo é ESTÁTICO: ele é ÚNICO para o processo inteiro, não por usuário.
+     Se a Ana faz login e, um segundo depois, o Bruno faz login, a Ana passa a
+     ver os pets do BRUNO. Dois alunos testando ao mesmo tempo na sala já
+     reproduzem o vazamento de dados.
+
+O princípio: *o cliente envia todos os dados de contexto EM CADA requisição*.
+O servidor não guarda nada sobre quem está conversando com ele.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    private static string? _usuarioDaVez;
+    private static int _tutorDaVez;
+
+    [HttpPost("api/v1/sessao")]
+    public IActionResult Entrar([FromBody] Credenciais credenciais)
+    {
+        var tutor = ...;
+        _usuarioDaVez = tutor.Nome;      // estado do cliente, no servidor
+        _tutorDaVez = tutor.Id;
+        return Ok(new { mensagem = $"Bem-vindo, {tutor.Nome}!" });
+    }
+
+    [HttpGet("api/v1/meus-pets")]
+    public IActionResult MeusPets()
+    {
+        if (_usuarioDaVez is null) return Unauthorized();
+        var pets = _store.Pets.Where(p => p.TutorId == _tutorDaVez).ToList();
+        return Ok(new { tutor = _usuarioDaVez, items = pets });
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // O login devolve um TOKEN. O token carrega a identidade — é o cliente
+    // que a transporta, em toda requisição, no header Authorization.
+    // Nada é guardado no servidor: qualquer instância atende qualquer chamada.
+    [HttpPost("api/v1/sessoes")]
+    public ActionResult<TokenEmitido> Autenticar([FromBody] Credenciais credenciais)
+    {
+        var tutor = _autenticador.Validar(credenciais);
+        if (tutor is null) return Unauthorized();
+
+        // Na aula 07 isso vira um JWT assinado de verdade.
+        var token = _emissorDeTokens.Emitir(tutor);
+
+        return Ok(new TokenEmitido { AccessToken = token, ExpiraEm = 3600 });
+    }
+
+    // "Meus pets" = os pets do tutor QUE VEIO NO TOKEN desta requisição.
+    [Authorize]
+    [HttpGet("api/v1/pets")]
+    public ActionResult<Pagina<Pet>> MeusPets([FromQuery] int page = 1, [FromQuery] int size = 20)
+    {
+        var tutorId = int.Parse(User.FindFirst("tutorId")!.Value);   // veio do token
+        var todos = _store.Pets.Where(p => p.TutorId == tutorId).ToList();
+        var itens = todos.Skip((page - 1) * size).Take(size).ToList();
+
+        return Ok(new Pagina<Pet> { Page = page, Size = size, Total = todos.Count, Items = itens });
+    }
+
+    // Alternativa sem autenticação (se o dono do dado for público na API):
+    //     GET /api/v1/tutores/{tutorId}/pets     — o contexto vai na URI
+
+
+COMO PROVAR EM SALA (o teste que fecha a discussão)
+--------------------------------------------------
+    # Aluno A faz login:
+    curl -s -X POST http://localhost:5302/api/v1/sessao \
+         -H "Content-Type: application/json" -d '{"usuario":"Ana","senha":"123"}'
+
+    # Aluno B (outro computador, outra máquina, MESMO servidor) faz login:
+    curl -s -X POST http://localhost:5302/api/v1/sessao \
+         -H "Content-Type: application/json" -d '{"usuario":"Bruno","senha":"123"}'
+
+    # Agora o aluno A consulta os pets DELE:
+    curl -s http://localhost:5302/api/v1/meus-pets | head -c 120
+    # {"tutor":"Bruno Lima 002", ...}   ← o servidor esqueceu a Ana
+
+Pergunta de fechamento: com uma sessão em memória, o que acontece quando o
+servidor reinicia? E quando a empresa sobe a segunda instância na Black Friday?
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi — a API inteira: não existe nenhum campo estático de sessão.
+Toda requisição carrega tudo o que precisa (ids no path, filtros na query).

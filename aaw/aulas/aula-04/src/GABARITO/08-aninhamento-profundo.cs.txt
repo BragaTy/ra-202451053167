@@ -1,0 +1,93 @@
+================================================================================
+GABARITO 08 — ANINHAMENTO PROFUNDO (5 níveis)
+Endpoint auditado:
+  GET /api/v1/petshops/{petshopId}/clientes/{clienteId}/pets/{petId}/consultas/{consultaId}/exames/{exameId}
+Slide: 14 ("Rotas aninhadas: a URI espelha o domínio")
+================================================================================
+
+O ERRO
+------
+Para ler UM exame, o cliente precisa conhecer CINCO identificadores. É o
+exemplo do slide 14 ao pé da letra:
+
+    /escolas/1/turmas/3/alunos/25/matriculas/88/disciplinas   ← o que não fazer
+
+Problemas concretos:
+
+  - O cliente precisa carregar (e manter em memória) ids que não têm nada a ver
+    com o que ele quer. Se ele só tem o id do exame — que veio de um QR code no
+    laudo impresso, por exemplo — ele simplesmente NÃO CONSEGUE montar a URL.
+  - A URI acopla o cliente à hierarquia interna do banco. No dia em que um pet
+    puder ter dois tutores, ou uma consulta for feita em outra unidade, a URL
+    inteira muda — e todos os clientes quebram.
+  - Os quatro primeiros ids não são validados nem usados: repare no código que
+    `petshopId`, `clienteId` e `petId` são recebidos e ignorados. Você pode
+    passar qualquer número que a resposta é a mesma. Isso é pior do que inútil:
+    é enganoso.
+
+Regra prática: **no máximo 2 níveis**. Recurso com identidade própria e acesso
+direto merece rota top-level.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/petshops/{petshopId:int}/clientes/{clienteId:int}/pets/{petId:int}/consultas/{consultaId:int}/exames/{exameId:int}")]
+    public IActionResult ResultadoDeExame(int petshopId, int clienteId, int petId, int consultaId, int exameId)
+    {
+        var exame = _store.Exames.FirstOrDefault(e => e.Id == exameId && e.ConsultaId == consultaId);
+        if (exame is null) return NotFound();
+        return Ok(exame);
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // 1) Exame tem identidade própria → vira recurso de primeiro nível.
+    [HttpGet("api/v1/exames/{id:int}", Name = "ObterExame")]
+    public ActionResult<Exame> ObterExame(int id)
+    {
+        var exame = _store.Exames.FirstOrDefault(e => e.Id == id);
+        if (exame is null)
+        {
+            return Problem(
+                title: "Exame não encontrado.",
+                detail: $"Não existe exame com id {id}.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/exames/{id}");
+        }
+
+        return Ok(exame);
+    }
+
+    // 2) "Os exames DESTA consulta" continua fazendo sentido: 1 nível de
+    //    aninhamento, para navegar a partir da consulta.
+    [HttpGet("api/v1/consultas/{consultaId:int}/exames")]
+    public ActionResult<List<Exame>> ExamesDaConsulta(int consultaId)
+    {
+        if (!_store.Consultas.Any(c => c.Id == consultaId))
+        {
+            return Problem(
+                title: "Consulta não encontrada.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/consultas/{consultaId}");
+        }
+
+        return Ok(_store.Exames.Where(e => e.ConsultaId == consultaId).ToList());
+    }
+
+    // 3) Filtros ficam na query string, não no path:
+    //        GET /api/v1/consultas?petId=9
+    //        GET /api/v1/exames?consultaId=12&tipo=hemograma
+
+
+COMO PROVAR EM SALA
+-------------------
+    # A URL "oficial":
+    curl -i http://localhost:5302/api/v1/petshops/1/clientes/5/pets/9/consultas/12/exames/6
+
+    # Agora troque os ids do meio por qualquer coisa:
+    curl -i http://localhost:5302/api/v1/petshops/99/clientes/99/pets/99/consultas/12/exames/6
+    # Mesma resposta! Os três primeiros ids nunca foram usados.
+
+Pergunta do slide 14 para a turma: "quantos ids o app precisa conhecer para
+mostrar um laudo?" A resposta certa é um.

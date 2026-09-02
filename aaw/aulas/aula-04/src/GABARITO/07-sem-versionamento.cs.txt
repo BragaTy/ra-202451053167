@@ -1,0 +1,89 @@
+================================================================================
+GABARITO 07 — BREAKING CHANGE SEM VERSIONAMENTO
+Endpoint auditado: GET /api/pets   (sem /v1, e com o campo "nome" renomeado)
+Slide: 13 ("Versionamento: a API é um contrato público")
+================================================================================
+
+O ERRO
+------
+Duas coisas erradas que andam juntas:
+
+  1. A rota não tem versão: `/api/pets` enquanto o resto da API é `/api/v1/...`.
+  2. O contrato mudou: o campo `nome` virou `nomeDoPet` "para combinar com o
+     vocabulário do time de produto". Toda aplicação que já consumia esse
+     endpoint quebrou no deploy — em produção, sem aviso.
+
+O ponto do slide 13: **quem consome sua API não atualiza junto com você**.
+O app mobile instalado no celular de 2024 continua pedindo `nome`. Você não
+controla o cronograma de atualização dele — nem se a loja vai aprovar a nova
+versão a tempo.
+
+Mudança ADITIVA (campo novo opcional, endpoint novo) não exige versão nova.
+Mudança que QUEBRA (renomear/remover campo, mudar tipo, mudar semântica de
+status) exige uma v2 nascendo AO LADO da v1.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/pets")]                       // sem versão
+    public IActionResult PetsDoAppAntigo(...)
+    {
+        ... .Select(p => new
+            {
+                p.Id,
+                nomeDoPet = p.Nome,             // contrato quebrado silenciosamente
+                p.Especie, p.Raca, p.TutorId
+            })
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // v1 CONTINUA existindo, intacta, com o contrato antigo ("nome").
+    // Ela só morre quando a telemetria mostrar que ninguém mais a chama.
+    [HttpGet("api/v1/pets")]
+    public ActionResult<Pagina<PetV1>> ListarPetsV1([FromQuery] int page = 1, [FromQuery] int size = 20)
+    {
+        var itens = _store.Pets.Skip((page - 1) * size).Take(size)
+            .Select(p => new PetV1 { Id = p.Id, Nome = p.Nome, Especie = p.Especie, Raca = p.Raca })
+            .ToList();
+
+        return Ok(new Pagina<PetV1> { Page = page, Size = size, Total = _store.Pets.Count, Items = itens });
+    }
+
+    // v2 nasce ao lado, com o contrato novo. Cliente migra quando puder.
+    [HttpGet("api/v2/pets")]
+    public ActionResult<Pagina<PetV2>> ListarPetsV2([FromQuery] int page = 1, [FromQuery] int size = 20)
+    {
+        var itens = _store.Pets.Skip((page - 1) * size).Take(size)
+            .Select(p => new PetV2 { Id = p.Id, NomeDoPet = p.Nome, Especie = p.Especie, Raca = p.Raca })
+            .ToList();
+
+        return Ok(new Pagina<PetV2> { Page = page, Size = size, Total = _store.Pets.Count, Items = itens });
+    }
+
+    // Alternativa aceitável quando não se quer duplicar o endpoint:
+    // manter o campo antigo E o novo por um período de transição —
+    //     { "nome": "Rex", "nomeDoPet": "Rex" }   // "nome" marcado como deprecated
+    // e só remover "nome" na v2.
+
+
+COMO PROVAR EM SALA
+-------------------
+    # O app novo:
+    curl -s "http://localhost:5302/api/pets?size=1"
+    # {"items":[{"id":1,"nomeDoPet":"Rex 0001", ...}]}
+
+    # O app de 2024 procurava por "nome" e recebe undefined.
+    # Simule o código do cliente:
+    #     const nome = pet.nome;   // undefined → tela em branco no celular do usuário
+
+    # Na API correta, a versão está no path desde o primeiro dia:
+    curl -s "http://localhost:5301/api/v1/cafes?size=1"
+
+
+PADRÃO DA DISCIPLINA
+--------------------
+Versão no PATH: /api/v1/... — visível, simples, fácil de testar no navegador.
+(Alternativas existem: header `Accept: application/vnd.pethouse.v2+json` ou
+query `?version=2`; a disciplina adota o path por ser explícito.)

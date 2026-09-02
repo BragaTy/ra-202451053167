@@ -1,0 +1,597 @@
+{
+  "info": {
+    "_postman_id": "a1c0f3e2-0301-4a11-9c31-cafe00000001",
+    "name": "Cafe Newton API (v1) - a API CORRETA",
+    "description": "API de referencia da Aula 03.1 (REST bem projetada). Rode 'dotnet run' em src/CafeteriaApi antes de usar. Todas as requisicoes usam a variavel {{baseUrl}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5301",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Cafes - o caminho feliz",
+      "item": [
+        {
+          "name": "GET lista paginada (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes?page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Envelope { page, size, total, items }. Repare no 'total': e ele que permite montar a navegacao."
+          },
+          "response": []
+        },
+        {
+          "name": "GET com filtro e ordenacao (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes?torra=escura&sort=-preco&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes"
+              ],
+              "query": [
+                {
+                  "key": "torra",
+                  "value": "escura"
+                },
+                {
+                  "key": "sort",
+                  "value": "-preco"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Filtro e ordenacao sao query strings DO recurso - nunca endpoints novos."
+          },
+          "response": []
+        },
+        {
+          "name": "GET por id (200 + ETag)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "1"
+              ]
+            },
+            "description": "Olhe a aba Headers da resposta: ETag e Cache-Control."
+          },
+          "response": []
+        },
+        {
+          "name": "POST cria cafe (201 + Location)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes"
+              ]
+            },
+            "description": "Resposta 201. O header Location traz a URI do recurso criado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Espresso da Aula\",\n  \"origem\": \"Sul de Minas\",\n  \"torra\": \"media\",\n  \"preco\": 9.5,\n  \"disponivel\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT substitui (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "2"
+              ]
+            },
+            "description": "PUT e idempotente: mande dez vezes, o estado final e o mesmo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Coado Reserva\",\n  \"origem\": \"Cerrado Mineiro\",\n  \"torra\": \"clara\",\n  \"preco\": 11.0,\n  \"disponivel\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH altera so o preco (200)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "2"
+              ]
+            },
+            "description": "Atualizacao parcial: so o campo enviado muda.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preco\": 13.75\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE remove (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "3"
+              ]
+            },
+            "description": "204 No Content: sucesso sem corpo. Rode de novo e veja o 404."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Cafes - os casos que ensinam",
+      "item": [
+        {
+          "name": "GET id inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/99999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "99999"
+              ]
+            },
+            "description": "404 com corpo application/problem+json (RFC 7807)."
+          },
+          "response": []
+        },
+        {
+          "name": "POST sem o campo nome (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes"
+              ]
+            },
+            "description": "Validacao automatica do [ApiController]: 400 com a lista de erros.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origem\": \"Sul de Minas\",\n  \"torra\": \"media\",\n  \"preco\": 9.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET com size abusivo (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes?size=100000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "100000"
+                }
+              ]
+            },
+            "description": "O servidor define o teto (100). O cliente nao manda no custo da API."
+          },
+          "response": []
+        },
+        {
+          "name": "GET com If-None-Match (304)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "If-None-Match",
+                "value": "\"cafe-1-v1\""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "1"
+              ]
+            },
+            "description": "Cole em If-None-Match o ETag devolvido pelo 'GET por id' e reenvie: 304, sem corpo."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE repetido (404 na 2a vez)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cafes/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cafes",
+                "3"
+              ]
+            },
+            "description": "Idempotencia: o estado do servidor nao muda da 2a chamada em diante."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Pedidos e itens (aninhamento de 1 nivel)",
+      "item": [
+        {
+          "name": "GET pedidos paginado (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos?page=1&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET pedidos entregues (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos?status=entregue&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "entregue"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET pedido por id (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST abre pedido (201 + Location)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos"
+              ]
+            },
+            "description": "Copie o id devolvido para usar nas proximas chamadas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Turma de ADS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET itens do pedido (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/1/itens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "1",
+                "itens"
+              ]
+            },
+            "description": "Sub-recurso: o item so existe DENTRO do pedido."
+          },
+          "response": []
+        },
+        {
+          "name": "POST adiciona item (201 + Location)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/1/itens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "1",
+                "itens"
+              ]
+            },
+            "description": "Troque o 1 da URL pelo id do pedido que voce criou.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafeId\": 5,\n  \"quantidade\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH muda o status (200)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "1"
+              ]
+            },
+            "description": "Nao existe /pedidos/1/entregar: acao vira campo do recurso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"entregue\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE item do pedido (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pedidos/1/itens/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pedidos",
+                "1",
+                "itens",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

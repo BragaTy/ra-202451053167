@@ -1,0 +1,103 @@
+================================================================================
+GABARITO 09 — COLEÇÃO GRANDE SEM PAGINAÇÃO, FILTRO OU ORDENAÇÃO
+Endpoint auditado: GET /api/v1/consultas
+Slide: 15 ("Coleções grandes: paginação, filtro, ordenação")
+================================================================================
+
+O ERRO
+------
+O endpoint devolve **as 6.000 consultas** do banco, de uma vez, sempre.
+São ~680 KB de JSON por requisição — para uma tela que mostra 20 linhas.
+
+O que acontece na vida real:
+
+  - No 3G do aluno, 680 KB são vários segundos de espera e de dados do plano.
+  - O servidor serializa 6.000 objetos a cada chamada; com 50 usuários
+    simultâneos, é a CPU inteira ocupada montando JSON que ninguém vai ler.
+  - O banco faz um SELECT sem LIMIT — o pior tipo de consulta em produção.
+  - E quando a clínica tiver 60.000 consultas? A resposta cresce junto,
+    linearmente, até o timeout.
+
+Repare também que não há como pedir "as consultas do pet 9" nem "as de março":
+o cliente é obrigado a baixar tudo e filtrar no dispositivo dele.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/consultas")]
+    public IActionResult Consultas()
+    {
+        return Ok(_store.Consultas);        // 6.000 registros, sempre
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // Envelope do slide 15: { page, size, total, items }.
+    // O TETO do "size" é do servidor — o cliente não manda no seu custo.
+    private const int TamanhoPadrao = 20;
+    private const int TamanhoMaximo = 100;
+
+    [HttpGet("api/v1/consultas")]
+    public ActionResult<Pagina<Consulta>> ListarConsultas(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = TamanhoPadrao,
+        [FromQuery] int? petId = null,
+        [FromQuery] string? veterinario = null,
+        [FromQuery] string? sort = null)
+    {
+        if (page < 1 || size < 1 || size > TamanhoMaximo)
+        {
+            return Problem(
+                title: "Parâmetro de paginação inválido.",
+                detail: $"'page' começa em 1 e 'size' deve estar entre 1 e {TamanhoMaximo}.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        IEnumerable<Consulta> consulta = _store.Consultas;
+
+        // Filtros são query strings DO recurso — nunca endpoints novos
+        // como /consultasDoPet ou /buscarConsultaPorVeterinario.
+        if (petId is not null)
+            consulta = consulta.Where(c => c.PetId == petId.Value);
+
+        if (!string.IsNullOrWhiteSpace(veterinario))
+            consulta = consulta.Where(c => c.Veterinario.Contains(veterinario, StringComparison.OrdinalIgnoreCase));
+
+        consulta = sort switch
+        {
+            "data" => consulta.OrderBy(c => c.Data),
+            "-data" => consulta.OrderByDescending(c => c.Data),
+            _ => consulta.OrderBy(c => c.Id)
+        };
+
+        var todos = consulta.ToList();
+        var itens = todos.Skip((page - 1) * size).Take(size).ToList();
+
+        return Ok(new Pagina<Consulta>
+        {
+            Page = page, Size = size, Total = todos.Count, Items = itens
+        });
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Meça o tamanho da resposta:
+    curl -s -o /dev/null -w "%{size_download} bytes em %{time_total}s\n" \
+         http://localhost:5302/api/v1/consultas
+    # ~681000 bytes
+
+    # Na API correta, o cliente pede o que cabe na tela:
+    curl -s -o /dev/null -w "%{size_download} bytes\n" \
+         "http://localhost:5301/api/v1/pedidos?page=1&size=20"
+    # ~3000 bytes
+
+    # E o servidor se defende de pedidos abusivos:
+    curl -i "http://localhost:5301/api/v1/cafes?size=100000"   # 400 Bad Request
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → Listar() (page/size/sort/filtros)
+CafeteriaApi/Models/Pagina.cs → o envelope

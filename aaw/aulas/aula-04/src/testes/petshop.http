@@ -1,0 +1,100 @@
+### PetHouse API — CACE OS 12 ERROS (Aula 03.1)
+# Abra no VS Code com a extensão "REST Client" (humao.rest-client) e clique
+# em "Send Request" acima de cada bloco. Antes: cd src/PetShopApi && dotnet run
+#
+# Para CADA requisição, anote: URI · método · status code · headers · corpo.
+# Tudo aqui funciona. O problema é de DESIGN.
+
+@baseUrl = http://localhost:5302
+
+### 01 — a ação está na URI, e a leitura é feita com POST
+POST {{baseUrl}}/api/v1/getPets
+
+### 02a — o pet 7 existe? (rode ANTES do 02b)
+GET {{baseUrl}}/api/v1/pet/7
+
+### 02b — o que este GET acabou de fazer?
+GET {{baseUrl}}/api/v1/deletarPet?id=7
+
+### 02c — rode o 02a de novo. O pet ainda existe?
+GET {{baseUrl}}/api/v1/pet/7
+
+### 03 — compare esta rota com a do endpoint 06
+GET {{baseUrl}}/api/v1/pet/9
+
+### 04a — repare na grafia da rota
+GET {{baseUrl}}/api/v1/banhosTosa?page=1&size=5
+
+### 04b — e na grafia desta. E "vip" é recurso ou filtro?
+GET {{baseUrl}}/api/v1/tutores_vip?page=1&size=5
+
+### 05 — qual status code? procure o header Location
+POST {{baseUrl}}/api/v1/pets
+Content-Type: application/json
+
+{
+  "nome": "Bidu",
+  "especie": "cachorro",
+  "raca": "SRD",
+  "tutorId": 1,
+  "pesoEmKg": 8.5,
+  "nascimento": "2024-01-10T00:00:00Z"
+}
+
+### 06 — este pet NÃO existe. Que status code voltou?
+GET {{baseUrl}}/api/v1/pets/999999
+
+### 07 — compare a URI e os NOMES DOS CAMPOS com os do endpoint 01
+GET {{baseUrl}}/api/pets?page=1&size=3
+
+### 08 — quantos ids o app precisa conhecer para ler UM exame?
+GET {{baseUrl}}/api/v1/petshops/1/clientes/5/pets/9/consultas/12/exames/6
+
+### 08b — agora troque os três primeiros ids por 99. Mudou alguma coisa?
+GET {{baseUrl}}/api/v1/petshops/99/clientes/99/pets/99/consultas/12/exames/6
+
+### 09 — olhe o tamanho e o tempo da resposta
+GET {{baseUrl}}/api/v1/consultas
+
+### 10a — conte quantas vacinas voltaram
+PUT {{baseUrl}}/api/v1/pets/12/vacinas
+Content-Type: application/json
+
+{
+  "nome": "V10"
+}
+
+### 10b — corpo IDÊNTICO. Conte de novo. PUT deveria ser idempotente...
+PUT {{baseUrl}}/api/v1/pets/12/vacinas
+Content-Type: application/json
+
+{
+  "nome": "V10"
+}
+
+### 11a — login como Ana
+POST {{baseUrl}}/api/v1/sessao
+Content-Type: application/json
+
+{
+  "usuario": "Ana",
+  "senha": "123"
+}
+
+### 11b — de quem são estes pets?
+GET {{baseUrl}}/api/v1/meus-pets
+
+### 11c — agora um SEGUNDO usuário faz login (simula o colega ao lado)
+POST {{baseUrl}}/api/v1/sessao
+Content-Type: application/json
+
+{
+  "usuario": "Bruno",
+  "senha": "123"
+}
+
+### 11d — rode o 11b outra vez, SEM refazer o login da Ana. De quem são os pets agora?
+GET {{baseUrl}}/api/v1/meus-pets
+
+### 12 — leia os headers. Este dado muda uma vez por ano.
+GET {{baseUrl}}/api/v1/tabela-de-precos

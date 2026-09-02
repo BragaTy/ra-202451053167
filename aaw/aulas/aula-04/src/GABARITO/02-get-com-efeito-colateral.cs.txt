@@ -1,0 +1,72 @@
+================================================================================
+GABARITO 02 — GET COM EFEITO COLATERAL (método seguro violado)
+Endpoint auditado: GET /api/v1/deletarPet?id=7
+Slides: 2 ("Métodos seguros: não altera o estado do recurso no servidor") e 9
+================================================================================
+
+O ERRO
+------
+Este é o erro mais grave da API — e o mais fácil de passar despercebido,
+porque o endpoint "funciona".
+
+  - GET é um método SEGURO: por contrato, ele só lê. Todo o ecossistema da web
+    conta com isso — navegadores fazem prefetch de links, crawlers seguem URLs,
+    proxies e CDNs cacheiam respostas de GET, o botão "voltar" repete GETs.
+  - Aqui, um GET APAGA um registro. Basta alguém colar essa URL no navegador,
+    um antivírus corporativo abrir o link, ou o Google indexar a página, para
+    o banco começar a perder pets sozinho.
+  - Agravante: a URI ainda carrega o verbo ("deletarPet"), e o id vai na query
+    string em vez de identificar o recurso no path. É literalmente a linha
+    `GET /deletarAluno?id=7  →  DELETE /alunos/7` do slide 9.
+
+Regra: se a operação MUDA o estado do servidor, ela não pode ser GET.
+
+
+CÓDIGO ERRADO (PetShopController.cs)
+------------------------------------
+    [HttpGet("api/v1/deletarPet")]
+    public IActionResult DeletarPet([FromQuery] int id)
+    {
+        var removeu = _store.RemoverPet(id);
+        return Ok(new { removido = removeu, id, mensagem = removeu ? "Pet removido." : "Pet nao existia." });
+    }
+
+
+CÓDIGO CORRIGIDO
+----------------
+    // O verbo sai da URI e vai para o método HTTP; o id identifica o recurso no path.
+    // 204 No Content quando removeu (não há o que devolver), 404 quando não existia.
+    [HttpDelete("api/v1/pets/{id:int}")]
+    public IActionResult RemoverPet(int id)
+    {
+        if (!_store.RemoverPet(id))
+        {
+            return Problem(
+                title: "Pet não encontrado.",
+                detail: $"Não existe pet com id {id}.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/pets/{id}");
+        }
+
+        return NoContent();
+    }
+
+
+COMO PROVAR EM SALA
+-------------------
+    # Confirme que o pet 7 existe:
+    curl -i http://localhost:5302/api/v1/pet/7          # 200
+
+    # Agora apenas ABRA a URL abaixo no navegador (nem precisa de curl!):
+    #   http://localhost:5302/api/v1/deletarPet?id=7
+
+    curl -i http://localhost:5302/api/v1/pet/7          # 404 — o pet sumiu com um GET
+
+Peça para a turma imaginar essa URL num link de e-mail ou num <img src="...">
+de uma página qualquer. É assim que se apaga um banco inteiro sem invadir nada.
+
+
+ONDE VER O CERTO
+----------------
+CafeteriaApi/Controllers/CafesController.cs → método Remover()
+    DELETE /api/v1/cafes/{id}  → 204 na primeira chamada, 404 na segunda
