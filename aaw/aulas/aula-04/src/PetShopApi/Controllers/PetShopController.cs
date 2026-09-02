@@ -25,10 +25,6 @@ public class PetShopController : ControllerBase
 {
     private readonly PetShopStore _store;
 
-    // Guardado entre requisições, do jeito mais simples possível.
-    private static string? _usuarioDaVez;
-    private static int _tutorDaVez;
-
     public PetShopController(PetShopStore store)
     {
         _store = store;
@@ -37,79 +33,120 @@ public class PetShopController : ControllerBase
     // ============================================================ ENDPOINT 01
     /// <summary>Lista os 50 primeiros pets para a tela inicial do aplicativo.</summary>
     [HttpGet("api/v1/pets")]
-    public IActionResult GetPets()
+    public IActionResult GetPets(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
     {
-        var pets = _store.Pets.Take(50).ToList();
+        if (page < 1 || size < 1 || size > 100)
+            return BadRequest();
 
-        return Ok(pets);
+        var itens = _store.Pets
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToList();
+
+        return Ok(new
+        {
+            page,
+            size,
+            total = _store.Pets.Count,
+            items = itens
+        });
     }
 
     // ============================================================ ENDPOINT 02
     /// <summary>Exclui um pet do cadastro.</summary>
     /// <remarks>Usado pelo botão "remover" da tela de cadastro.</remarks>
-    [HttpDelete("api/v1/pets")]
-    public IActionResult DeletarPet([FromQuery] int id)
+    [HttpDelete("api/v1/pets/{id:int}")]
+    public IActionResult DeletarPet(int id)
     {
         var removeu = _store.RemoverPet(id);
 
-        return Ok(new { removido = removeu, id, mensagem = removeu ? "Pet removido." : "Pet nao existia." });
+        if (!removeu)
+            return NotFound();
+
+        return NoContent();
     }
 
     // ============================================================ ENDPOINT 03
     /// <summary>Consulta a ficha de um pet.</summary>
-    [HttpGet("api/v1/pets/{id:int}")]
-    public IActionResult FichaDoPet(int id)
-    {
-        var pet = _store.BuscarPet(id);
-        if (pet is null) return NotFound();
-
-
-        return Ok(pet);
-    }
-
-    // ============================================================ ENDPOINT 04
-    /// <summary>Lista os atendimentos de banho e tosa.</summary>
-    [HttpGet("api/v1/banhos-tosa")]
-    public IActionResult BanhosTosa([FromQuery] int page = 1, [FromQuery] int size = 20)
-    {
-        var itens = _store.BanhosETosas.Skip((page - 1) * size).Take(size).ToList();
-
-        return Ok(new { page, size, total = _store.BanhosETosas.Count, items = itens });
-    }
-
-    /// <summary>Lista os tutores do programa de fidelidade.</summary>
-    [HttpGet("api/v1/tutores-vip")]
-    public IActionResult TutoresVip([FromQuery] int page = 1, [FromQuery] int size = 20)
-    {
-        var vips = _store.Tutores.Where(t => t.Vip).ToList();
-        var itens = vips.Skip((page - 1) * size).Take(size).ToList();
-
-        return Ok(new { page, size, total = vips.Count, items = itens });
-    }
-
-    // ============================================================ ENDPOINT 05
-    /// <summary>Cadastra um pet novo.</summary>
-    [HttpPut("api/v1/pets")]
-    public IActionResult CadastrarPet([FromBody] Pet pet)
-    {
-        var criado = _store.CriarPet(pet);
-
-        return Ok(criado);
-    }
 
     // ============================================================ ENDPOINT 06
     /// <summary>Consulta um pet pelo id (endpoint usado pelo app mobile).</summary>
-    [HttpGet("api/v1/pets/{id:int}")]
+    [HttpGet("api/v1/pets/{id:int}", Name = "ObterPet")]
     public IActionResult ObterPet(int id)
     {
         var pet = _store.BuscarPet(id);
 
         if (pet is null)
         {
-            return Ok(new { erro = "Pet nao encontrado", id });
+            return Problem(
+                title: "Pet não encontrado.",
+                detail: $"Não existe pet com id {id}.",
+                statusCode: StatusCodes.Status404NotFound,
+                instance: $"/api/v1/pets/{id}");
         }
 
         return Ok(pet);
+    }
+
+    // ============================================================ ENDPOINT 04
+    /// <summary>Lista os atendimentos de banho e tosa.</summary>
+    [HttpGet("api/v1/banhos-e-tosas")]
+    public IActionResult BanhosTosa(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
+    {
+        var itens = _store.BanhosETosas
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToList();
+
+        return Ok(new
+        {
+            page,
+            size,
+            total = _store.BanhosETosas.Count,
+            items = itens
+        });
+    }
+
+    /// <summary>Lista os tutores do programa de fidelidade.</summary>
+    [HttpGet("api/v1/tutores")]
+    public IActionResult TutoresVip(
+        [FromQuery] bool? vip = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
+    {
+        var tutores = vip.HasValue
+            ? _store.Tutores.Where(t => t.Vip == vip.Value).ToList()
+            : _store.Tutores.ToList();
+
+        var itens = tutores
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToList();
+
+        return Ok(new
+        {
+            page,
+            size,
+            total = tutores.Count,
+            items = itens
+        });
+    }
+
+    // ============================================================ ENDPOINT 05
+    /// <summary>Cadastra um pet novo.</summary>
+    [HttpPost("api/v1/pets")]
+    public IActionResult CadastrarPet([FromBody] Pet pet)
+    {
+        var criado = _store.CriarPet(pet);
+
+        return CreatedAtAction(
+            nameof(ObterPet),
+            new { id = criado.Id },
+            criado);
     }
 
     // ============================================================ ENDPOINT 07
@@ -118,8 +155,10 @@ public class PetShopController : ControllerBase
     /// O campo "nome" foi renomeado para "nomeDoPet" no último release para
     /// combinar com o vocabulário do time de produto.
     /// </remarks>
-    [HttpGet("api/pets")]
-    public IActionResult PetsDoAppAntigo([FromQuery] int page = 1, [FromQuery] int size = 20)
+    [HttpGet("api/v1/pets")]
+    public IActionResult PetsDoAppNovo(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20)
     {
         var itens = _store.Pets
             .Skip((page - 1) * size)
@@ -134,16 +173,24 @@ public class PetShopController : ControllerBase
             })
             .ToList();
 
-        return Ok(new { page, size, total = _store.Pets.Count, items = itens });
+        return Ok(new
+        {
+            page,
+            size,
+            total = _store.Pets.Count,
+            items = itens
+        });
     }
 
     // ============================================================ ENDPOINT 08
     /// <summary>Consulta o resultado de um exame.</summary>
-    [HttpGet("api/v1/petshops/{petshopId:int}/clientes/{clienteId:int}/pets/{petId:int}/consultas/{consultaId:int}/exames/{exameId:int}")]
-    public IActionResult ResultadoDeExame(int petshopId, int clienteId, int petId, int consultaId, int exameId)
+    [HttpGet("api/v1/exames/{exameId:int}")]
+    public IActionResult ResultadoDeExame(int exameId)
     {
-        var exame = _store.Exames.FirstOrDefault(e => e.Id == exameId && e.ConsultaId == consultaId);
-        if (exame is null) return NotFound();
+        var exame = _store.Exames.FirstOrDefault(e => e.Id == exameId);
+
+        if (exame is null)
+            return NotFound();
 
         return Ok(exame);
     }
@@ -151,49 +198,90 @@ public class PetShopController : ControllerBase
     // ============================================================ ENDPOINT 09
     /// <summary>Lista as consultas veterinárias para o relatório da clínica.</summary>
     [HttpGet("api/v1/consultas")]
-    public IActionResult Consultas()
+    public IActionResult Consultas(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20,
+        [FromQuery] int? petId = null,
+        [FromQuery] string? veterinario = null,
+        [FromQuery] string? sort = null)
     {
-        return Ok(_store.Consultas);
+        if (page < 1 || size < 1 || size > 100)
+            return BadRequest();
+
+        IEnumerable<Consulta> consulta = _store.Consultas;
+
+        if (petId.HasValue)
+            consulta = consulta.Where(c => c.PetId == petId.Value);
+
+        if (!string.IsNullOrWhiteSpace(veterinario))
+        {
+            consulta = consulta.Where(c =>
+                c.Veterinario.Contains(
+                    veterinario,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        consulta = sort switch
+        {
+            "data" => consulta.OrderBy(c => c.Data),
+            "-data" => consulta.OrderByDescending(c => c.Data),
+            _ => consulta.OrderBy(c => c.Id)
+        };
+
+        var todas = consulta.ToList();
+
+        var itens = todas
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToList();
+
+        return Ok(new
+        {
+            page,
+            size,
+            total = todas.Count,
+            items = itens
+        });
     }
 
     // ============================================================ ENDPOINT 10
     /// <summary>Registra a carteira de vacinação do pet.</summary>
-    [HttpPut("api/v1/pets/{id:int}/vacinas")]
+    [HttpPost("api/v1/pets/{id:int}/vacinas")]
     public IActionResult RegistrarVacina(int id, [FromBody] Vacina vacina)
     {
         var pet = _store.BuscarPet(id);
-        if (pet is null) return NotFound();
 
-        _store.RegistrarVacina(id, string.IsNullOrWhiteSpace(vacina.Nome) ? "V10" : vacina.Nome);
+        if (pet is null)
+            return NotFound();
 
-        return Ok(_store.VacinasDoPet(id));
+        var criada = _store.RegistrarVacina(
+            id,
+            string.IsNullOrWhiteSpace(vacina.Nome) ? "V10" : vacina.Nome);
+
+        return Created(
+            $"/api/v1/pets/{id}/vacinas/{criada.Id}",
+            criada);
     }
 
     // ============================================================ ENDPOINT 11
-    /// <summary>Autentica o tutor no aplicativo.</summary>
-    [HttpPost("api/v1/sessao")]
-    public IActionResult Entrar([FromBody] Credenciais credenciais)
-    {
-        var tutor = _store.Tutores.FirstOrDefault(t =>
-            t.Nome.StartsWith(credenciais.Usuario, StringComparison.OrdinalIgnoreCase));
-
-        if (tutor is null) return Unauthorized();
-
-        _usuarioDaVez = tutor.Nome;
-        _tutorDaVez = tutor.Id;
-
-        return Ok(new { mensagem = $"Bem-vindo, {tutor.Nome}!" });
-    }
-
     /// <summary>Lista os pets do tutor autenticado.</summary>
-    [HttpGet("api/v1/meus-pets")]
-    public IActionResult MeusPets()
+    [HttpGet("api/v1/tutores/{tutorId:int}/pets")]
+    public IActionResult MeusPets(int tutorId)
     {
-        if (_usuarioDaVez is null) return Unauthorized();
+        var tutor = _store.Tutores.FirstOrDefault(t => t.Id == tutorId);
 
-        var pets = _store.Pets.Where(p => p.TutorId == _tutorDaVez).ToList();
+        if (tutor is null)
+            return NotFound();
 
-        return Ok(new { tutor = _usuarioDaVez, items = pets });
+        var pets = _store.Pets
+            .Where(p => p.TutorId == tutorId)
+            .ToList();
+
+        return Ok(new
+        {
+            tutor = tutor.Nome,
+            items = pets
+        });
     }
 
     // ============================================================ ENDPOINT 12
@@ -201,8 +289,21 @@ public class PetShopController : ControllerBase
     [HttpGet("api/v1/tabela-de-precos")]
     public IActionResult TabelaDePrecos()
     {
-        Response.Headers[HeaderNames.CacheControl] = "no-store, no-cache, must-revalidate";
-        Response.Headers[HeaderNames.Pragma] = "no-cache";
+        const string etag = "\"precos-2026-v1\"";
+
+        var etagDoCliente = Request.Headers[HeaderNames.IfNoneMatch]
+            .ToString();
+
+        var clientePossuiVersao = etagDoCliente
+            .Split(',')
+            .Select(valor => valor.Trim())
+            .Contains(etag);
+
+        if (clientePossuiVersao)
+            return StatusCode(StatusCodes.Status304NotModified);
+
+        Response.Headers[HeaderNames.ETag] = etag;
+        Response.Headers[HeaderNames.CacheControl] = "public, max-age=3600";
 
         return Ok(_store.TabelaDePrecos);
     }
