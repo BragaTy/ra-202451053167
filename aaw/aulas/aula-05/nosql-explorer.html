@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoSQL Explorer — Arquitetura de Aplicações Web</title>
+<style>
+  :root {
+    --mongo:   #00ED64;
+    --redis:   #FF4438;
+    --cassandra:#1287B1;
+    --neo4j:   #008CC1;
+    --bg:      #0f1117;
+    --surface: #1a1d27;
+    --card:    #22263a;
+    --border:  #2e3250;
+    --text:    #e2e8f0;
+    --muted:   #8892b0;
+    --radius:  10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+  header .logo span { color: var(--mongo); }
+  header .subtitle { color: var(--muted); font-size: .85rem; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface);
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 22px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all .2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); }
+  .tab[data-type="mongo"].active   { border-color: var(--mongo);    color: var(--mongo); }
+  .tab[data-type="redis"].active   { border-color: var(--redis);    color: var(--redis); }
+  .tab[data-type="cassandra"].active { border-color: var(--cassandra); color: var(--cassandra); }
+  .tab[data-type="neo4j"].active   { border-color: var(--neo4j);   color: var(--neo4j); }
+  .tab .badge {
+    font-size: .7rem; padding: 2px 7px;
+    border-radius: 99px; font-weight: 700;
+    background: rgba(255,255,255,.08);
+  }
+
+  /* ── Panels ── */
+  .panel { display: none; height: calc(100vh - 108px); }
+  .panel.active { display: flex; }
+
+  /* ── Split ── */
+  .split { display: flex; width: 100%; height: 100%; }
+  .form-side {
+    width: 46%;
+    min-width: 320px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .preview-side {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #0d1020;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* ── Form elements ── */
+  .section-title {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .field-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    flex-wrap: wrap;
+  }
+  input, select, textarea {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: .85rem;
+    outline: none;
+    transition: border-color .2s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #4a5568; }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  select option { background: var(--card); }
+  .inp-key   { flex: 1; min-width: 90px; }
+  .inp-val   { flex: 2; min-width: 120px; }
+  .inp-type  { width: 110px; }
+  .btn-remove {
+    background: none; border: none; cursor: pointer;
+    color: #e53e3e; font-size: 1.1rem; padding: 4px 6px;
+    border-radius: 4px; transition: background .15s;
+  }
+  .btn-remove:hover { background: rgba(229,62,62,.15); }
+  .btn-add, .btn-primary {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 600;
+    transition: all .15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-add { background: var(--card); border: 1px dashed var(--border); color: var(--muted); width: 100%; justify-content: center; }
+  .btn-add:hover { border-color: #4a5568; color: var(--text); }
+  .btn-mongo    { background: var(--mongo);    color: #000; }
+  .btn-redis    { background: var(--redis);    color: #fff; }
+  .btn-cassandra{ background: var(--cassandra);color: #fff; }
+  .btn-neo4j    { background: var(--neo4j);   color: #fff; }
+
+  /* ── Code preview ── */
+  .preview-label {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .copy-btn {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer; font-size: .75rem;
+    padding: 3px 10px; border-radius: 4px; transition: all .15s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: #4a5568; }
+  pre {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: .82rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+    flex: 1;
+  }
+  /* JSON syntax highlight */
+  .jk  { color: #7ec8e3; }   /* key */
+  .js  { color: #a8d8a8; }   /* string value */
+  .jn  { color: #f0a070; }   /* number */
+  .jb  { color: #c084fc; }   /* boolean */
+  .jnu { color: var(--muted); }  /* null */
+  .jc  { color: #64748b; font-style: italic; } /* comment */
+
+  /* ── Info box ── */
+  .info-box {
+    background: var(--card);
+    border-left: 3px solid;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: .82rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .info-box strong { color: var(--text); }
+  .info-box.mongo    { border-color: var(--mongo); }
+  .info-box.redis    { border-color: var(--redis); }
+  .info-box.cassandra{ border-color: var(--cassandra); }
+  .info-box.neo4j    { border-color: var(--neo4j); }
+
+  /* ── Graph SVG ── */
+  #graph-canvas {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    min-height: 280px;
+  }
+  .node-circle { cursor: grab; }
+
+  /* ── Collection list (Mongo) ── */
+  .doc-list { display: flex; flex-direction: column; gap: 8px; }
+  .doc-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: .8rem;
+    line-height: 1.6;
+    position: relative;
+  }
+  .doc-item .doc-remove {
+    position: absolute; top: 8px; right: 10px;
+    background: none; border: none; cursor: pointer;
+    color: #e53e3e; font-size: .9rem;
+  }
+
+  /* ── Redis types ── */
+  .redis-type-badge {
+    font-size: .7rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 4px; background: rgba(255,68,56,.2); color: var(--redis);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Tooltip ── */
+  [title] { cursor: help; }
+
+  /* ── Responsive ── */
+  @media(max-width:700px) {
+    .split { flex-direction: column; }
+    .form-side { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: 50%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">No<span>SQL</span> Explorer</div>
+  <div class="subtitle">Arquitetura de Aplicações Web — Simulador interativo dos 4 tipos de banco NoSQL</div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-type="mongo"     onclick="switchTab('mongo')">
+    🍃 <span>Documento</span> <span class="badge">MongoDB</span>
+  </div>
+  <div class="tab" data-type="redis"     onclick="switchTab('redis')">
+    🔴 <span>Chave-Valor</span> <span class="badge">Redis</span>
+  </div>
+  <div class="tab" data-type="cassandra" onclick="switchTab('cassandra')">
+    💠 <span>Colunar</span> <span class="badge">Cassandra</span>
+  </div>
+  <div class="tab" data-type="neo4j"    onclick="switchTab('neo4j')">
+    🔵 <span>Grafos</span> <span class="badge">Neo4j</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PANEL 1 — MONGODB (Document)
+════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-mongo">
+  <div class="split">
+    <!-- FORM -->
+    <div class="form-side">
+      <div class="info-box mongo">
+        <strong>Banco de Dados Orientado a Documentos</strong><br>
+        Dados são armazenados como documentos JSON/BSON. Não há schema fixo — cada documento pode ter campos diferentes. Ideal para dados hierárquicos e variáveis.
+      </div>
+
+      <div>
+        <div class="section-title">Coleção (collection)</div>
+        <input id="mongo-collection" type="text" placeholder="ex: produtos" value="produtos" style="width:100%">
+      </div>
+
+      <div>
+        <div class="section-title">Campos do documento</div>
+        <div id="mongo-fields" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn-add" onclick="addMongoField()" style="margin-top:8px">＋ Adicionar campo</button>
+      </div>
+
+      <button class="btn-primary btn-mongo" onclick="insertMongoDoc()" style="justify-content:center">
+        ▶ Inserir documento na coleção
+      </button>
+
+      <div>
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+          Documentos na coleção
+          <button class="btn-remove" onclick="clearMongoDocs()" title="Limpar coleção">🗑</button>
+        </div>
+        <div id="mongo-doc-list" class="doc-list"></div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-side">
+      <div class="preview-label">
+        Documento atual (JSON)
+        <button class="copy-btn" onclick="copyText('mongo-json-preview')">Copiar</button>
+      </div>
+      <pre id="mongo-json-preview">{
+  <span class="jk">"_id"</span>: <span class="js">ObjectId("...")</span>,
+  <span class="jc">// preencha os campos ao lado →</span>
+}</pre>
+
+      <div class="preview-label">
+        Comando MongoDB equivalente
+        <button class="copy-btn" onclick="copyText('mongo-cmd-preview')">Copiar</button>
+      </div>
+      <pre id="mongo-cmd-preview"><span class="jc">// Aguardando campos...</span></pre>
+
+      <div class="preview-label">Conceitos-chave</div>
+      <div class="info-box mongo" style="font-size:.8rem">
+        <strong>Database</strong> → contém várias <strong>Collections</strong> → cada collection contém <strong>Documents</strong> (JSON)<br><br>
+        <strong>_id</strong>: gerado automaticamente pelo MongoDB (ObjectId de 12 bytes)<br>
+        <strong>Schema-less</strong>: documentos na mesma collection podem ter campos diferentes<br>
+        <strong>BSON</strong>: extensão binária do JSON com tipos extras (Date, ObjectId, etc.)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PANEL 2 — REDIS (Key-Value)
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-redis">
+  <div class="split">
+    <!-- FORM -->
+    <div class="form-side">
+      <div class="info-box redis">
+        <strong>Banco de Dados Chave-Valor</strong><br>
+        Cada registro é um par chave → valor. Extremamente rápido (dados em memória). Suporta múltiplos tipos de valor: strings, listas, hashes, sets e sorted sets.
+      </div>
+
+      <div>
+        <div class="section-title">Tipo de estrutura</div>
+        <select id="redis-struct-type" style="width:100%" onchange="updateRedisForm()">
+          <option value="string">String — valor simples</option>
+          <option value="list">List — lista ordenada</option>
+          <option value="hash">Hash — objeto com campos</option>
+          <option value="set">Set — conjunto único de valores</option>
+        </select>
+      </div>
+
+      <div id="redis-form-area" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+      <button class="btn-primary btn-redis" onclick="insertRedisEntry()">
+        ▶ Armazenar no Redis
+      </button>
+
+      <div>
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+          Chaves armazenadas
+          <button class="btn-remove" onclick="clearRedis()" title="Limpar">🗑</button>
+        </div>
+        <div id="redis-store-list" class="doc-list"></div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-side">
+      <div class="preview-label">
+        Visualização JSON
+        <button class="copy-btn" onclick="copyText('redis-json-preview')">Copiar</button>
+      </div>
+      <pre id="redis-json-preview"><span class="jc">// preencha a chave e valor ao lado →</span></pre>
+
+      <div class="preview-label">
+        Comandos Redis equivalentes
+        <button class="copy-btn" onclick="copyText('redis-cmd-preview')">Copiar</button>
+      </div>
+      <pre id="redis-cmd-preview"><span class="jc">// Aguardando dados...</span></pre>
+
+      <div class="preview-label">Conceitos-chave</div>
+      <div class="info-box redis" style="font-size:.8rem">
+        <strong>In-memory</strong>: todos os dados ficam na RAM → latência sub-milissegundo<br>
+        <strong>TTL (Time To Live)</strong>: chaves podem expirar automaticamente<br>
+        <strong>Tipos</strong>: String, List, Hash, Set, Sorted Set, Stream<br>
+        <strong>Uso comum</strong>: cache de sessão, filas de mensagens, ranking em tempo real
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PANEL 3 — CASSANDRA (Column-family)
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-cassandra">
+  <div class="split">
+    <!-- FORM -->
+    <div class="form-side">
+      <div class="info-box cassandra">
+        <strong>Banco de Dados Colunar (Column-Family)</strong><br>
+        Organiza dados em famílias de colunas. Cada linha tem uma chave e pode ter colunas diferentes. Distribuído e altamente escalável. Ideal para séries temporais e analytics.
+      </div>
+
+      <div>
+        <div class="section-title">Keyspace (equivale ao database)</div>
+        <input id="cass-keyspace" type="text" placeholder="ex: ecommerce" value="ecommerce" style="width:100%">
+      </div>
+
+      <div>
+        <div class="section-title">Tabela (Column Family)</div>
+        <input id="cass-table" type="text" placeholder="ex: pedidos" value="pedidos" style="width:100%">
+      </div>
+
+      <div>
+        <div class="section-title">Partition Key (chave de distribuição)</div>
+        <div style="display:flex;gap:8px">
+          <input id="cass-pk-name"  placeholder="nome da coluna" value="cliente_id" style="flex:1">
+          <input id="cass-pk-value" placeholder="valor" value="user_42" style="flex:1">
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Clustering Column (opcional — ordena as linhas)</div>
+        <div style="display:flex;gap:8px">
+          <input id="cass-ck-name"  placeholder="nome da coluna" value="data_pedido" style="flex:1">
+          <input id="cass-ck-value" placeholder="valor" value="2025-03-20T14:00:00Z" style="flex:1">
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Colunas adicionais</div>
+        <div id="cass-cols" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn-add" onclick="addCassCol()" style="margin-top:8px">＋ Adicionar coluna</button>
+      </div>
+
+      <button class="btn-primary btn-cassandra" onclick="insertCassRow()">
+        ▶ Inserir linha
+      </button>
+
+      <div>
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+          Linhas inseridas
+          <button class="btn-remove" onclick="clearCass()" title="Limpar">🗑</button>
+        </div>
+        <div id="cass-rows-list" class="doc-list"></div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-side">
+      <div class="preview-label">
+        Visualização JSON da linha
+        <button class="copy-btn" onclick="copyText('cass-json-preview')">Copiar</button>
+      </div>
+      <pre id="cass-json-preview"><span class="jc">// preencha os campos ao lado →</span></pre>
+
+      <div class="preview-label">
+        CQL equivalente (Cassandra Query Language)
+        <button class="copy-btn" onclick="copyText('cass-cql-preview')">Copiar</button>
+      </div>
+      <pre id="cass-cql-preview"><span class="jc">-- Aguardando dados...</span></pre>
+
+      <div class="preview-label">Conceitos-chave</div>
+      <div class="info-box cassandra" style="font-size:.8rem">
+        <strong>Partition Key</strong>: determina em qual nó do cluster os dados ficam<br>
+        <strong>Clustering Column</strong>: ordena os dados dentro de uma partição<br>
+        <strong>Sparse Columns</strong>: linhas diferentes podem ter colunas diferentes (sem NULL = sem espaço)<br>
+        <strong>Uso comum</strong>: IoT, séries temporais, logs, métricas de alta escala
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     PANEL 4 — NEO4J (Graph)
+════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-neo4j">
+  <div class="split">
+    <!-- FORM -->
+    <div class="form-side">
+      <div class="info-box neo4j">
+        <strong>Banco de Dados de Grafos</strong><br>
+        Dados são nós (entidades) conectados por arestas (relacionamentos). Cada nó e relação pode ter propriedades. Ideal para redes sociais, recomendações e detecção de fraudes.
+      </div>
+
+      <!-- Node form -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div class="section-title">Adicionar Nó (Node)</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <input id="neo-node-id"    placeholder="id (ex: n1)"    style="width:80px">
+          <input id="neo-node-label" placeholder="label (ex: Pessoa)" style="flex:1;min-width:100px">
+        </div>
+        <div id="neo-node-props" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-add" onclick="addNeoNodeProp()" style="flex:1">＋ Propriedade</button>
+          <button class="btn-primary btn-neo4j" onclick="addNeoNode()" style="flex:1">▶ Criar Nó</button>
+        </div>
+      </div>
+
+      <!-- Relationship form -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div class="section-title">Adicionar Relacionamento (Edge)</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <input id="neo-from"   placeholder="de (id do nó)" style="flex:1;min-width:90px">
+          <input id="neo-to"     placeholder="para (id do nó)" style="flex:1;min-width:90px">
+          <input id="neo-rel"    placeholder="tipo (ex: CONHECE)" style="flex:1;min-width:100px">
+        </div>
+        <button class="btn-primary btn-neo4j" onclick="addNeoRel()" style="margin-top:8px;width:100%;justify-content:center">
+          ▶ Criar Relacionamento
+        </button>
+      </div>
+
+      <div>
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+          Grafo atual
+          <button class="btn-remove" onclick="clearNeo()" title="Limpar">🗑</button>
+        </div>
+        <div id="neo-node-list" style="font-size:.8rem;color:var(--muted);"></div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-side">
+      <div class="preview-label">Visualização do Grafo</div>
+      <svg id="graph-canvas"></svg>
+
+      <div class="preview-label">
+        JSON do grafo
+        <button class="copy-btn" onclick="copyText('neo-json-preview')">Copiar</button>
+      </div>
+      <pre id="neo-json-preview"><span class="jc">// Adicione nós e relacionamentos ao lado →</span></pre>
+
+      <div class="preview-label">
+        Cypher Query equivalente
+        <button class="copy-btn" onclick="copyText('neo-cypher-preview')">Copiar</button>
+      </div>
+      <pre id="neo-cypher-preview"><span class="jc">// Aguardando dados...</span></pre>
+
+      <div class="preview-label">Conceitos-chave</div>
+      <div class="info-box neo4j" style="font-size:.8rem">
+        <strong>Node</strong>: entidade com label e propriedades — ex: (p:Pessoa {nome: "Ana"})<br>
+        <strong>Relationship</strong>: conexão direcional — ex: (a)-[:CONHECE]->(b)<br>
+        <strong>Cypher</strong>: linguagem de consulta declarativa do Neo4j<br>
+        <strong>Uso comum</strong>: redes sociais, motores de recomendação, detecção de fraudes, rotas
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function switchTab(type) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[data-type="${type}"]`).classList.add('active');
+  document.getElementById(`panel-${type}`).classList.add('active');
+}
+
+function copyText(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    const btn = el.previousElementSibling.querySelector('.copy-btn');
+    if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => btn.textContent = 'Copiar', 1500); }
+  });
+}
+
+function highlightJSON(obj) {
+  const s = JSON.stringify(obj, null, 2);
+  return s
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([^"]+)":/g, '<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="js">"$1"</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span class="jn">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="jb">$1</span>')
+    .replace(/: null/g, ': <span class="jnu">null</span>');
+}
+
+function parseValue(v, t) {
+  if (t === 'number')  return isNaN(+v) ? v : +v;
+  if (t === 'boolean') return v === 'true' || v === '1';
+  if (t === 'null')    return null;
+  if (t === 'array')   { try { return JSON.parse(v); } catch { return v.split(',').map(x=>x.trim()); } }
+  if (t === 'object')  { try { return JSON.parse(v); } catch { return v; } }
+  return v;
+}
+
+function genOid() {
+  return [...Array(24)].map(()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+}
+
+// ═══════════════════════════════════════════════
+// MONGODB
+// ═══════════════════════════════════════════════
+let mongoDocs = [];
+
+function addMongoField(key='', val='', type='string') {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  row.innerHTML = `
+    <input class="inp-key"  placeholder="campo" value="${key}" oninput="renderMongoPreview()">
+    <input class="inp-val"  placeholder="valor"  value="${val}" oninput="renderMongoPreview()">
+    <select class="inp-type" onchange="renderMongoPreview()">
+      <option value="string"  ${type==='string'?'selected':''}>string</option>
+      <option value="number"  ${type==='number'?'selected':''}>number</option>
+      <option value="boolean" ${type==='boolean'?'selected':''}>boolean</option>
+      <option value="null"    ${type==='null'?'selected':''}>null</option>
+      <option value="array"   ${type==='array'?'selected':''}>array</option>
+      <option value="object"  ${type==='object'?'selected':''}>object</option>
+    </select>
+    <button class="btn-remove" onclick="this.parentElement.remove();renderMongoPreview()">✕</button>`;
+  document.getElementById('mongo-fields').appendChild(row);
+  renderMongoPreview();
+}
+
+function getMongoDoc() {
+  const doc = {};
+  document.querySelectorAll('#mongo-fields .field-row').forEach(row => {
+    const k = row.children[0].value.trim();
+    const v = row.children[1].value.trim();
+    const t = row.children[2].value;
+    if (k) doc[k] = parseValue(v, t);
+  });
+  return doc;
+}
+
+function renderMongoPreview() {
+  const col   = document.getElementById('mongo-collection').value.trim() || 'collection';
+  const doc   = getMongoDoc();
+  const full  = { _id: 'ObjectId("'+genOid().slice(0,12)+'…")', ...doc };
+
+  document.getElementById('mongo-json-preview').innerHTML = highlightJSON(full)
+    .replace('"ObjectId(', '<span class="jnu">ObjectId(')
+    .replace('…")"', '…")</span>');
+
+  const fields = Object.keys(doc).length
+    ? JSON.stringify(doc, null, 2).slice(1,-1).trim()
+    : '  /* adicione campos */';
+  document.getElementById('mongo-cmd-preview').innerHTML =
+    `<span class="jc">// Inserir um documento</span>\ndb.<span class="jk">${col}</span>.insertOne(${JSON.stringify(doc, null, 2)});\n\n<span class="jc">// Buscar todos</span>\ndb.<span class="jk">${col}</span>.find({});\n\n<span class="jc">// Buscar com filtro</span>\ndb.<span class="jk">${col}</span>.find({ <span class="js">"campo"</span>: <span class="js">"valor"</span> });`;
+}
+
+function insertMongoDoc() {
+  const col = document.getElementById('mongo-collection').value.trim() || 'collection';
+  const doc = getMongoDoc();
+  if (!Object.keys(doc).length) { alert('Adicione pelo menos um campo!'); return; }
+  const full = { _id: 'ObjectId("'+genOid()+'")' , ...doc };
+  mongoDocs.push({ col, doc: full });
+  renderMongoDocList();
+  document.getElementById('mongo-fields').innerHTML = '';
+  addMongoField(); renderMongoPreview();
+}
+
+function renderMongoDocList() {
+  const list = document.getElementById('mongo-doc-list');
+  list.innerHTML = '';
+  if (!mongoDocs.length) { list.innerHTML = '<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:12px">Nenhum documento ainda</div>'; return; }
+  mongoDocs.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'doc-item';
+    d.innerHTML = highlightJSON(item.doc) +
+      `<button class="doc-remove" onclick="mongoDocs.splice(${i},1);renderMongoDocList()">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+function clearMongoDocs() { mongoDocs = []; renderMongoDocList(); }
+
+// init
+addMongoField('nome',       'Notebook Gamer',  'string');
+addMongoField('preco',      '4599.90',          'number');
+addMongoField('estoque',    '15',               'number');
+addMongoField('disponivel', 'true',             'boolean');
+addMongoField('tags',       'eletronico,gamer',  'array');
+renderMongoPreview();
+renderMongoDocList();
+
+document.getElementById('mongo-collection').addEventListener('input', renderMongoPreview);
+
+// ═══════════════════════════════════════════════
+// REDIS
+// ═══════════════════════════════════════════════
+let redisStore = {};
+
+function updateRedisForm() {
+  const t = document.getElementById('redis-struct-type').value;
+  const area = document.getElementById('redis-form-area');
+  const ttlRow = `<div>
+    <div class="section-title">TTL — Time To Live (segundos, 0 = sem expiração)</div>
+    <input id="redis-ttl" type="number" placeholder="ex: 3600" value="0" style="width:100%">
+  </div>`;
+
+  let html = `<div>
+    <div class="section-title">Chave (key)</div>
+    <input id="redis-key" placeholder="ex: session:abc123" style="width:100%" oninput="renderRedisPreview()">
+  </div>`;
+
+  if (t === 'string') {
+    html += `<div>
+      <div class="section-title">Valor (value)</div>
+      <input id="redis-string-val" placeholder="ex: João Silva" style="width:100%" oninput="renderRedisPreview()">
+    </div>`;
+  } else if (t === 'list') {
+    html += `<div>
+      <div class="section-title">Itens da lista (um por linha)</div>
+      <textarea id="redis-list-vals" rows="4" placeholder="item1\nitem2\nitem3" style="width:100%" oninput="renderRedisPreview()"></textarea>
+    </div>`;
+  } else if (t === 'hash') {
+    html += `<div>
+      <div class="section-title">Campos do hash</div>
+      <div id="redis-hash-fields" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <button class="btn-add" onclick="addRedisHashField()" style="margin-top:6px">＋ Campo</button>
+    </div>`;
+  } else if (t === 'set') {
+    html += `<div>
+      <div class="section-title">Membros do set (um por linha)</div>
+      <textarea id="redis-set-vals" rows="4" placeholder="usuario1\nusuario2\nusuario3" style="width:100%" oninput="renderRedisPreview()"></textarea>
+    </div>`;
+  }
+  html += ttlRow;
+  area.innerHTML = html;
+
+  if (t === 'hash') {
+    addRedisHashField('nome', 'Ana');
+    addRedisHashField('email', 'ana@email.com');
+    addRedisHashField('cargo', 'Engenheira');
+  }
+  renderRedisPreview();
+  area.querySelectorAll('input,textarea').forEach(el => el.addEventListener('input', renderRedisPreview));
+}
+
+function addRedisHashField(k='', v='') {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px';
+  row.innerHTML = `<input placeholder="campo" value="${k}" style="flex:1" oninput="renderRedisPreview()">
+    <input placeholder="valor" value="${v}" style="flex:1" oninput="renderRedisPreview()">
+    <button class="btn-remove" onclick="this.parentElement.remove();renderRedisPreview()">✕</button>`;
+  document.getElementById('redis-hash-fields')?.appendChild(row);
+}
+
+function renderRedisPreview() {
+  const t   = document.getElementById('redis-struct-type').value;
+  const key = document.getElementById('redis-key')?.value.trim() || 'minha-chave';
+  const ttl = +document.getElementById('redis-ttl')?.value || 0;
+  let jsonVal = {}, cmds = '';
+
+  if (t === 'string') {
+    const v = document.getElementById('redis-string-val')?.value || '';
+    jsonVal = { key, type:'string', value: v, ttl };
+    cmds = `SET ${key} "${v}"` + (ttl ? `\nEXPIRE ${key} ${ttl}` : '') +
+           `\n\nGET ${key}\nDEL ${key}`;
+  } else if (t === 'list') {
+    const items = (document.getElementById('redis-list-vals')?.value || '').split('\n').filter(Boolean);
+    jsonVal = { key, type:'list', values: items, ttl };
+    cmds = items.map(i => `RPUSH ${key} "${i}"`).join('\n') +
+           (ttl ? `\nEXPIRE ${key} ${ttl}` : '') +
+           `\n\nLRANGE ${key} 0 -1\nLLEN ${key}`;
+  } else if (t === 'hash') {
+    const fields = {};
+    document.querySelectorAll('#redis-hash-fields > div').forEach(row => {
+      const k = row.children[0].value.trim();
+      const v = row.children[1].value.trim();
+      if (k) fields[k] = v;
+    });
+    jsonVal = { key, type:'hash', fields, ttl };
+    const pairs = Object.entries(fields).map(([k,v]) => `${k} "${v}"`).join(' ');
+    cmds = `HSET ${key} ${pairs}` + (ttl ? `\nEXPIRE ${key} ${ttl}` : '') +
+           `\n\nHGETALL ${key}\nHGET ${key} ${Object.keys(fields)[0]||'campo'}`;
+  } else if (t === 'set') {
+    const members = (document.getElementById('redis-set-vals')?.value || '').split('\n').filter(Boolean);
+    jsonVal = { key, type:'set', members, ttl };
+    cmds = members.map(m => `SADD ${key} "${m}"`).join('\n') +
+           (ttl ? `\nEXPIRE ${key} ${ttl}` : '') +
+           `\n\nSMEMBERS ${key}\nSISMEMBER ${key} "valor"`;
+  }
+
+  document.getElementById('redis-json-preview').innerHTML = highlightJSON(jsonVal);
+  document.getElementById('redis-cmd-preview').innerHTML =
+    `<span class="jc"># Tipo: ${t.toUpperCase()}</span>\n${cmds}`;
+}
+
+function insertRedisEntry() {
+  const t   = document.getElementById('redis-struct-type').value;
+  const key = document.getElementById('redis-key')?.value.trim();
+  if (!key) { alert('Preencha a chave!'); return; }
+
+  let entry = { type: t };
+  if (t === 'string') entry.value = document.getElementById('redis-string-val')?.value;
+  else if (t === 'list') entry.values = (document.getElementById('redis-list-vals')?.value || '').split('\n').filter(Boolean);
+  else if (t === 'hash') {
+    entry.fields = {};
+    document.querySelectorAll('#redis-hash-fields > div').forEach(row => {
+      const k = row.children[0].value.trim(), v = row.children[1].value.trim();
+      if (k) entry.fields[k] = v;
+    });
+  } else if (t === 'set') entry.members = (document.getElementById('redis-set-vals')?.value || '').split('\n').filter(Boolean);
+
+  entry.ttl = +document.getElementById('redis-ttl')?.value || 0;
+  redisStore[key] = entry;
+  renderRedisStoreList();
+}
+
+function renderRedisStoreList() {
+  const list = document.getElementById('redis-store-list');
+  const keys = Object.keys(redisStore);
+  if (!keys.length) { list.innerHTML = '<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:12px">Nenhuma chave armazenada</div>'; return; }
+  list.innerHTML = '';
+  keys.forEach(k => {
+    const e = redisStore[k];
+    const d = document.createElement('div');
+    d.className = 'doc-item';
+    d.innerHTML = `<span class="redis-type-badge">${e.type}</span> <span class="jk">${k}</span><br><br>` +
+      highlightJSON(e) +
+      `<button class="doc-remove" onclick="delete redisStore['${k}'];renderRedisStoreList()">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+function clearRedis() { redisStore = {}; renderRedisStoreList(); }
+
+// init
+updateRedisForm();
+setTimeout(() => {
+  const k = document.getElementById('redis-key');
+  if (k) { k.value = 'usuario:101'; renderRedisPreview(); }
+}, 50);
+
+// ═══════════════════════════════════════════════
+// CASSANDRA
+// ═══════════════════════════════════════════════
+let cassRows = [];
+
+function addCassCol(k='', v='') {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  row.innerHTML = `
+    <input class="inp-key" placeholder="coluna" value="${k}" oninput="renderCassPreview()">
+    <input class="inp-val" placeholder="valor"  value="${v}" oninput="renderCassPreview()">
+    <button class="btn-remove" onclick="this.parentElement.remove();renderCassPreview()">✕</button>`;
+  document.getElementById('cass-cols').appendChild(row);
+  renderCassPreview();
+}
+
+function renderCassPreview() {
+  const ks  = document.getElementById('cass-keyspace').value.trim() || 'keyspace';
+  const tbl = document.getElementById('cass-table').value.trim() || 'tabela';
+  const pkn = document.getElementById('cass-pk-name').value.trim()  || 'partition_key';
+  const pkv = document.getElementById('cass-pk-value').value.trim() || '';
+  const ckn = document.getElementById('cass-ck-name').value.trim();
+  const ckv = document.getElementById('cass-ck-value').value.trim();
+
+  const row = { [pkn]: pkv };
+  if (ckn) row[ckn] = ckv;
+  document.querySelectorAll('#cass-cols .field-row').forEach(r => {
+    const k = r.children[0].value.trim(), v = r.children[1].value.trim();
+    if (k) row[k] = v;
+  });
+
+  document.getElementById('cass-json-preview').innerHTML = highlightJSON(row);
+
+  const cols   = Object.keys(row).join(', ');
+  const vals   = Object.values(row).map(v => typeof v === 'string' ? `'${v}'` : v).join(', ');
+  const create = `CREATE KEYSPACE ${ks}
+  WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 3};
+
+USE ${ks};
+
+CREATE TABLE ${tbl} (
+  ${pkn} TEXT,${ckn ? `\n  ${ckn} TIMESTAMP,` : ''}
+  ${Object.keys(row).filter(k => k !== pkn && k !== ckn).map(k=>`${k} TEXT`).join(',\n  ')}
+  PRIMARY KEY (${pkn}${ckn ? `, ${ckn}` : ''})
+);`;
+
+  const insert = `INSERT INTO ${ks}.${tbl} (${cols})
+VALUES (${vals});`;
+  const select = `SELECT * FROM ${ks}.${tbl}
+  WHERE ${pkn} = '${pkv}';`;
+
+  document.getElementById('cass-cql-preview').innerHTML =
+    `<span class="jc">-- Criar keyspace e tabela</span>\n${create}\n\n<span class="jc">-- Inserir</span>\n${insert}\n\n<span class="jc">-- Consultar</span>\n${select}`;
+}
+
+function insertCassRow() {
+  const pkn = document.getElementById('cass-pk-name').value.trim()  || 'pk';
+  const pkv = document.getElementById('cass-pk-value').value.trim();
+  if (!pkv) { alert('Preencha o valor da Partition Key!'); return; }
+
+  const ckn = document.getElementById('cass-ck-name').value.trim();
+  const ckv = document.getElementById('cass-ck-value').value.trim();
+  const row = { [pkn]: pkv };
+  if (ckn) row[ckn] = ckv;
+  document.querySelectorAll('#cass-cols .field-row').forEach(r => {
+    const k = r.children[0].value.trim(), v = r.children[1].value.trim();
+    if (k) row[k] = v;
+  });
+  cassRows.push(row);
+  renderCassRowList();
+  document.getElementById('cass-cols').innerHTML = '';
+  addCassCol(); renderCassPreview();
+}
+
+function renderCassRowList() {
+  const list = document.getElementById('cass-rows-list');
+  list.innerHTML = '';
+  if (!cassRows.length) { list.innerHTML = '<div style="color:var(--muted);font-size:.8rem;text-align:center;padding:12px">Nenhuma linha inserida</div>'; return; }
+  cassRows.forEach((row, i) => {
+    const d = document.createElement('div');
+    d.className = 'doc-item';
+    d.innerHTML = highlightJSON(row) +
+      `<button class="doc-remove" onclick="cassRows.splice(${i},1);renderCassRowList()">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+function clearCass() { cassRows = []; renderCassRowList(); }
+
+// init
+addCassCol('produto', 'Notebook');
+addCassCol('valor',   '4599.90');
+addCassCol('status',  'pago');
+renderCassPreview();
+renderCassRowList();
+['cass-keyspace','cass-table','cass-pk-name','cass-pk-value','cass-ck-name','cass-ck-value'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderCassPreview);
+});
+
+// ═══════════════════════════════════════════════
+// NEO4J
+// ═══════════════════════════════════════════════
+let neoNodes = {};   // id -> { label, props:{} }
+let neoEdges = [];   // { from, to, rel }
+
+const NODE_COLORS = ['#00ED64','#FF4438','#1287B1','#c084fc','#f0a070','#7ec8e3','#a8d8a8'];
+
+function addNeoNodeProp(k='', v='') {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px';
+  row.innerHTML = `<input placeholder="propriedade" value="${k}" style="flex:1">
+    <input placeholder="valor" value="${v}" style="flex:1">
+    <button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('neo-node-props').appendChild(row);
+}
+
+function addNeoNode() {
+  const id    = document.getElementById('neo-node-id').value.trim();
+  const label = document.getElementById('neo-node-label').value.trim();
+  if (!id || !label) { alert('Preencha o id e o label do nó!'); return; }
+  const props = {};
+  document.querySelectorAll('#neo-node-props > div').forEach(row => {
+    const k = row.children[0].value.trim(), v = row.children[1].value.trim();
+    if (k) props[k] = v;
+  });
+  neoNodes[id] = { label, props };
+  document.getElementById('neo-node-id').value    = '';
+  document.getElementById('neo-node-label').value = '';
+  document.getElementById('neo-node-props').innerHTML = '';
+  renderNeo();
+}
+
+function addNeoRel() {
+  const from = document.getElementById('neo-from').value.trim();
+  const to   = document.getElementById('neo-to').value.trim();
+  const rel  = document.getElementById('neo-rel').value.trim().toUpperCase();
+  if (!from || !to || !rel) { alert('Preencha de, para e tipo do relacionamento!'); return; }
+  if (!neoNodes[from]) { alert(`Nó "${from}" não existe. Crie-o primeiro.`); return; }
+  if (!neoNodes[to])   { alert(`Nó "${to}" não existe. Crie-o primeiro.`); return; }
+  neoEdges.push({ from, to, rel });
+  renderNeo();
+}
+
+function clearNeo() { neoNodes = {}; neoEdges = []; renderNeo(); }
+
+function renderNeo() {
+  renderNeoList();
+  renderNeoGraph();
+  renderNeoJSON();
+}
+
+function renderNeoList() {
+  const el = document.getElementById('neo-node-list');
+  const ids = Object.keys(neoNodes);
+  if (!ids.length) { el.innerHTML = 'Nenhum nó ainda'; return; }
+  el.innerHTML = ids.map(id => {
+    const n = neoNodes[id];
+    return `<span style="margin-right:10px;color:var(--text)">●</span> <b>${id}</b>: ${n.label} ${JSON.stringify(n.props)}`;
+  }).join('<br>') + (neoEdges.length ? '<br>' + neoEdges.map(e => `→ ${e.from} <b style="color:#c084fc">[${e.rel}]</b> ${e.to}`).join('<br>') : '');
+}
+
+function renderNeoGraph() {
+  const svg = document.getElementById('graph-canvas');
+  const ids  = Object.keys(neoNodes);
+  if (!ids.length) {
+    svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#4a5568" font-size="14" font-family="sans-serif">Adicione nós para visualizar o grafo</text>';
+    return;
+  }
+
+  const W = svg.clientWidth || 480, H = 260;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // layout circular
+  const pos = {};
+  const cx = W/2, cy = H/2, r = Math.min(W, H)*0.32;
+  ids.forEach((id, i) => {
+    const angle = (2*Math.PI*i/ids.length) - Math.PI/2;
+    pos[id] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+  if (ids.length === 1) pos[ids[0]] = { x: cx, y: cy };
+
+  let html = '';
+  // Arestas
+  neoEdges.forEach(e => {
+    const s = pos[e.from], t = pos[e.to];
+    if (!s || !t) return;
+    const mx = (s.x+t.x)/2, my = (s.y+t.y)/2;
+    const dx = t.x-s.x, dy = t.y-s.y, len = Math.hypot(dx,dy)||1;
+    const nx = -dy/len*14, ny = dx/len*14;
+    const bx = mx+nx, by = my+ny;
+    // arrowhead
+    const ux = (t.x-s.x)/len, uy = (t.y-s.y)/len;
+    const ax = t.x-ux*20, ay = t.y-uy*20;
+    html += `<defs><marker id="arr${e.from}${e.to}" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#c084fc"/></marker></defs>
+      <path d="M${s.x},${s.y} Q${bx},${by} ${ax},${ay}" fill="none" stroke="#c084fc" stroke-width="2" marker-end="url(#arr${e.from}${e.to})"/>
+      <text x="${bx+nx*0.4}" y="${by+ny*0.4}" text-anchor="middle" fill="#c084fc" font-size="10" font-family="monospace">${e.rel}</text>`;
+  });
+  // Nós
+  ids.forEach((id, i) => {
+    const {x, y} = pos[id];
+    const n = neoNodes[id];
+    const color = NODE_COLORS[i % NODE_COLORS.length];
+    html += `<circle cx="${x}" cy="${y}" r="22" fill="${color}" fill-opacity=".85" stroke="${color}" stroke-width="2"/>
+      <text x="${x}" y="${y-4}" text-anchor="middle" fill="#000" font-size="10" font-weight="bold" font-family="sans-serif">${n.label}</text>
+      <text x="${x}" y="${y+9}" text-anchor="middle" fill="#000" font-size="9" font-family="monospace">${id}</text>`;
+  });
+  svg.innerHTML = html;
+}
+
+function renderNeoJSON() {
+  const ids = Object.keys(neoNodes);
+  if (!ids.length) {
+    document.getElementById('neo-json-preview').innerHTML = '<span class="jc">// Adicione nós e relacionamentos ao lado →</span>';
+    document.getElementById('neo-cypher-preview').innerHTML = '<span class="jc">// Aguardando dados...</span>';
+    return;
+  }
+  const graph = {
+    nodes: ids.map(id => ({ id, label: neoNodes[id].label, properties: neoNodes[id].props })),
+    relationships: neoEdges.map(e => ({ from: e.from, to: e.to, type: e.rel }))
+  };
+  document.getElementById('neo-json-preview').innerHTML = highlightJSON(graph);
+
+  const creates = ids.map(id => {
+    const n = neoNodes[id];
+    const props = Object.entries(n.props).map(([k,v]) => `${k}: "${v}"`).join(', ');
+    return `CREATE (${id}:${n.label}${props ? ' {'+props+'}' : ''})`;
+  }).join('\n');
+  const rels = neoEdges.map(e => `CREATE (${e.from})-[:${e.rel}]->(${e.to})`).join('\n');
+
+  const queries = [`// Criar nós e relacionamentos\n${creates}${rels ? '\n'+rels : ''}`,
+    `// Buscar todos\nMATCH (n) RETURN n`,
+    ids.length >= 2 ?
+      `// Encontrar caminhos\nMATCH p=(${ids[0]})-[*]-(${ids[ids.length-1]}) RETURN p` : ''
+  ].filter(Boolean).join('\n\n');
+
+  document.getElementById('neo-cypher-preview').innerHTML =
+    queries.replace(/\/\/.+/g, m => `<span class="jc">${m}</span>`)
+           .replace(/:([\w]+)/g, ':<span class="js">$1</span>');
+}
+
+// init neo
+neoNodes['p1'] = { label: 'Pessoa', props: { nome: 'Ana', idade: '28' } };
+neoNodes['p2'] = { label: 'Pessoa', props: { nome: 'Bruno', idade: '32' } };
+neoNodes['p3'] = { label: 'Empresa', props: { nome: 'TechCorp' } };
+neoEdges.push({ from:'p1', to:'p2', rel:'CONHECE' });
+neoEdges.push({ from:'p1', to:'p3', rel:'TRABALHA_EM' });
+neoEdges.push({ from:'p2', to:'p3', rel:'TRABALHA_EM' });
+setTimeout(renderNeo, 100);
+
+// Resize observer for graph
+new ResizeObserver(() => renderNeoGraph()).observe(document.getElementById('graph-canvas'));
+</script>
+</body>
+</html>

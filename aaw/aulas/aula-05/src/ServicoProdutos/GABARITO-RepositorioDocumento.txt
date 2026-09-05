@@ -1,0 +1,81 @@
+GABARITO — Aula 05 — ProdutoRepositorioDocumento (uso exclusivo do professor)
+=============================================================================
+
+Implementação completa dos 4 TODOs. Substitua o corpo de cada método.
+
+using System.Text.Json;
+using ServicoProdutos.Models;
+
+namespace ServicoProdutos.Repositorios;
+
+public class ProdutoRepositorioDocumento : IProdutoRepositorio
+{
+    private readonly string _pasta;
+    private static readonly JsonSerializerOptions _json =
+        new() { WriteIndented = true };
+
+    public ProdutoRepositorioDocumento(IConfiguration config)
+    {
+        _pasta = config["PastaDocumentos"] ?? "dados";
+        Directory.CreateDirectory(_pasta);
+    }
+
+    private string CaminhoDoDocumento(int id) =>
+        Path.Combine(_pasta, $"produto-{id}.json");
+
+    // TODO 1
+    public List<Produto> ObterTodos()
+    {
+        var produtos = new List<Produto>();
+        foreach (var arquivo in Directory.EnumerateFiles(_pasta, "produto-*.json"))
+        {
+            var json = File.ReadAllText(arquivo);
+            var produto = JsonSerializer.Deserialize<Produto>(json);
+            if (produto is not null)
+                produtos.Add(produto);
+        }
+        return produtos.OrderBy(p => p.Id).ToList();
+        // Resposta da pergunta: a APLICAÇÃO faz todo o trabalho (ler, montar,
+        // ordenar). Não existe um "motor de consulta" — esse é o trade-off.
+    }
+
+    // TODO 2
+    public Produto? ObterPorId(int id)
+    {
+        var caminho = CaminhoDoDocumento(id);
+        if (!File.Exists(caminho))
+            return null;
+        return JsonSerializer.Deserialize<Produto>(File.ReadAllText(caminho));
+        // A chave (id) leva DIRETO ao documento: é o acesso O(1) típico de
+        // document/key-value stores — a força do modelo.
+    }
+
+    // TODO 3
+    public List<Produto> ObterAbaixoDe(decimal precoMaximo)
+    {
+        return ObterTodos().Where(p => p.Preco < precoMaximo).ToList();
+        // Comparação com o SQL: lá o filtro rodou NO BANCO (WHERE);
+        // aqui carregamos tudo e filtramos NA APLICAÇÃO. Em coleções
+        // grandes, document stores reais resolvem isso com ÍNDICES.
+    }
+
+    // TODO 4
+    public Produto Criar(Produto produto)
+    {
+        var existentes = ObterTodos();
+        produto.Id = existentes.Count == 0 ? 1 : existentes.Max(p => p.Id) + 1;
+        File.WriteAllText(CaminhoDoDocumento(produto.Id),
+            JsonSerializer.Serialize(produto, _json));
+        return produto;
+    }
+}
+
+DISCUSSÃO DO EXERCÍCIO DE EVOLUÇÃO DE ESQUEMA (Tags no Produto)
+---------------------------------------------------------------
+- Documento: os arquivos antigos continuam legíveis — a propriedade nova
+  simplesmente não existe neles e o deserializer usa o valor padrão
+  (lista vazia). "Schema on read".
+- SQLite: a tabela foi criada sem a coluna; como usamos EnsureCreated
+  (sem migrações), o EF lança erro de coluna inexistente ao consultar.
+  Correções possíveis: apagar produtos.db (recriar) ou usar Migrations.
+  É exatamente o custo de "schema on write" que a aula quer mostrar.
