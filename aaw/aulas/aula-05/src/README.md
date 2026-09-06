@@ -34,3 +34,13 @@ dos passos 4 e 5.
 ## Requisitos
 
 .NET SDK 8+ (testado com 10), VSCode, Postman. Sem servidor de banco: SQLite e JSON são arquivos locais.
+
+## Respostas
+
+### 4. Comparação
+
+No SQL o filtro acontece no banco de dados. No Documento ele carrega os arquivos e faz o filtro na aplicação. Em coleções muito grandes, o Documento pode ficar lento porque precisa ler todos os arquivos.
+
+### 5. Evolução de esquema
+
+O Documento funciona sem migração, porque o JSON aceita arquivos com campos diferentes. Os produtos antigos podem continuar sem o campo `Tags`. No SQLite precisa fazer uma migração, porque a tabela precisa ter a nova coluna.
