@@ -41,3 +41,17 @@ PUT (200/404) e DELETE duas vezes no mesmo id (204 depois 404 — por quê?).
 
 `GABARITO/LivrosController.Gabarito.cs.txt` — solução completa comentada
 (professor: não distribuir antes da prática).
+
+## Resposta do entregável
+
+| Teste | Resultado |
+|---|---|
+| `GET api/livros` | Retornou a lista de livros com status 200. |
+| `GET api/livros/1` | Retornou o livro de id 1 com status 200. |
+| `GET api/livros/999` | Como o livro não existe, retornou 404. |
+| `POST api/livros` válido | Criou um livro, retornou 201 e o header `Location` com o endereço dele. |
+| `POST api/livros` sem título | Retornou 400 porque o título é obrigatório. |
+| `PUT api/livros/1` | Atualizou o livro e retornou 200. Se o id não existir, retorna 404. |
+| `DELETE api/livros/1` duas vezes | Na primeira retornou 204 porque apagou. Na segunda retornou 404 porque o livro já não existia. |
+
+O `DELETE` continua sendo idempotente, porque repetir a chamada não apaga mais coisas e o resultado final continua sendo o livro removido.

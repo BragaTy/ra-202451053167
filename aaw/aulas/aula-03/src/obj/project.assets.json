@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net6.0": {
       "Microsoft.EntityFrameworkCore/6.0.36": {
@@ -985,20 +985,20 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\202451053167\\.nuget\\packages\\": {}
+    "C:\\Users\\Matheus Braga\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj",
+      "projectUniqueName": "C:\\Users\\Matheus Braga\\Documents\\GitHub\\ra-202451053167\\aaw\\aulas\\aula-03\\src\\EscolaApi.csproj",
       "projectName": "EscolaApi",
-      "projectPath": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\EscolaApi.csproj",
-      "packagesPath": "C:\\Users\\202451053167\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\obj\\",
+      "projectPath": "C:\\Users\\Matheus Braga\\Documents\\GitHub\\ra-202451053167\\aaw\\aulas\\aula-03\\src\\EscolaApi.csproj",
+      "packagesPath": "C:\\Users\\Matheus Braga\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Matheus Braga\\Documents\\GitHub\\ra-202451053167\\aaw\\aulas\\aula-03\\src\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\202451053167\\Downloads\\git\\newton-aaw-26.2\\aulas\\aula03-rest\\src\\NuGet.Config",
-        "C:\\Users\\202451053167\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Matheus Braga\\Documents\\GitHub\\ra-202451053167\\aaw\\aulas\\aula-03\\src\\NuGet.Config",
+        "C:\\Users\\Matheus Braga\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0"
@@ -1008,6 +1008,7 @@
       },
       "frameworks": {
         "net6.0": {
+          "framework": "net6.0",
           "targetAlias": "net6.0",
           "projectReferences": {}
         }
@@ -1016,10 +1017,17 @@
         "warnAsError": [
           "NU1605"
         ]
-      }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net6.0": {
+        "framework": "net6.0",
         "targetAlias": "net6.0",
         "dependencies": {
           "Microsoft.EntityFrameworkCore.InMemory": {
@@ -1042,6 +1050,24 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.win-x64",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[6.0.36, 6.0.36]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -1050,7 +1076,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400\\RuntimeIdentifierGraph.json"
       }
     }
   }

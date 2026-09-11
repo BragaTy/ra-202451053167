@@ -47,3 +47,16 @@ de cada anti-padrão.
 
 `GABARITO/AlunosController.Gabarito.cs.txt` — versão refatorada completa,
 com o mapa correção-por-anti-padrão (professor: não distribuir antes).
+
+## Resposta do entregável
+
+| # | Antes | Depois |
+|---|---|---|
+| 1 | As rotas tinham verbos, como `/getAlunos` e `/deletarAluno`. | Ficou `GET /api/v1/alunos` para listar e `DELETE /api/v1/alunos/{id}` para apagar. |
+| 2 | A API retornava 200 até quando o aluno não existia. | Agora retorna 200 quando encontra, 204 quando apaga e 404 quando não encontra. |
+| 3 | A matrícula tinha uma rota com muitos níveis. | Ficou `GET /api/v1/alunos/{id}/matriculas/{matriculaId}`. |
+| 4 | As rotas não tinham versão. | Todas passaram a usar `/api/v1`. |
+| 5 | A lista retornava todos os alunos de uma vez. | Ficou `GET /api/v1/alunos?page=1&size=10`, retornando página, tamanho, total e itens. |
+| 6 | Quando o aluno não existia, voltava HTML com status 500. | Agora retorna 404 com o erro em JSON usando `ProblemDetails`. |
+
+Depois das mudanças, as rotas ficaram mais simples e os status informam corretamente se a requisição deu certo ou não.
