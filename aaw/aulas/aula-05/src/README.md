@@ -35,7 +35,14 @@ dos passos 4 e 5.
 
 .NET SDK 8+ (testado com 10), VSCode, Postman. Sem servidor de banco: SQLite e JSON são arquivos locais.
 
-## Respostas
+## Resposta do entregável
+
+| Teste | SQL | Documento |
+|---|---|---|
+| `GET /produtos` | Buscou os produtos na tabela. | Leu os arquivos JSON da pasta `dados`. |
+| `GET /produtos/1` | Buscou o produto pelo id no banco. | Abriu o arquivo `produto-1.json`. |
+| `GET /produtos/barato?max=100` | O banco fez o filtro. | A aplicação leu os arquivos e depois fez o filtro. |
+| `POST /produtos` | Salvou uma linha na tabela. | Criou um novo arquivo JSON. |
 
 ### 4. Comparação
 
