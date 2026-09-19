@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Database
+apivazada.db
+apivazada.db-shm
+apivazada.db-wal
+
+# VS Code
+.vscode/
+
+# User settings
+appsettings.Development.json
