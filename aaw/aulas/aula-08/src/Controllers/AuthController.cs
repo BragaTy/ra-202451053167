@@ -26,16 +26,12 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
-        // TODO 2.1: autenticar o usuário com as credenciais recebidas:
-        //   var usuario = BibliotecaStore.Autenticar(request.Email, request.Senha);
-        //   Se vier null, devolva:
-        //   return Unauthorized(new { message = "Credenciais inválidas." });
+        var usuario = BibliotecaStore.Autenticar(request.Email, request.Senha);
+        if (usuario is null)
+            return Unauthorized(new { message = "Credenciais inválidas." });
 
-        // TODO 2.2: gerar o token chamando o método auxiliar já pronto:
-        //   var token = GerarToken(usuario);
-        //   return Ok(new { token, nome = usuario.Nome, role = usuario.Role });
-
-        throw new NotImplementedException("Implementem o Login na Etapa 2.");
+        var token = GerarToken(usuario);
+        return Ok(new { token, nome = usuario.Nome, role = usuario.Role });
     }
 
     // ═══════════════════════════════════════════════════════════════

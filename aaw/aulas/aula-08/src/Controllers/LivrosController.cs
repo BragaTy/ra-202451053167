@@ -1,5 +1,6 @@
 using BibliotecaApi.Data;
 using BibliotecaApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BibliotecaApi.Controllers;
@@ -34,9 +35,7 @@ public class LivrosController : ControllerBase
     // ╔══════════════════════════════════════════════════════════════╗
     // ║  ETAPA 3 — Proteger os endpoints de escrita                  ║
     // ╚══════════════════════════════════════════════════════════════╝
-    // TODO 3.1: adicione o using Microsoft.AspNetCore.Authorization
-    //           e o atributo [Authorize] neste método.
-    //           Sem token, a resposta deve virar 401 Unauthorized.
+    [Authorize]
     [HttpPost]
     public ActionResult<Livro> Criar([FromBody] LivroRequest dados)
     {
@@ -47,7 +46,7 @@ public class LivrosController : ControllerBase
         return CreatedAtAction(nameof(BuscarPorId), new { id = livro.Id }, livro);
     }
 
-    // TODO 3.2: proteja também o PUT com [Authorize].
+    [Authorize]
     [HttpPut("{id}")]
     public IActionResult Atualizar(int id, [FromBody] LivroRequest dados)
     {
@@ -60,10 +59,7 @@ public class LivrosController : ControllerBase
     // ╔══════════════════════════════════════════════════════════════╗
     // ║  ETAPA 4 — Exigir uma role específica                        ║
     // ╚══════════════════════════════════════════════════════════════╝
-    // TODO 4.1: remover livro é atribuição do bibliotecário. Proteja este
-    //           método com [Authorize(Roles = "Bibliotecario")].
-    //           Um token de "Leitor" deve receber 403 Forbidden — repare
-    //           que ele ESTÁ autenticado, mas não está autorizado.
+    [Authorize(Roles = "Bibliotecario")]
     [HttpDelete("{id}")]
     public IActionResult Remover(int id) =>
         _store.Remover(id) ? NoContent() : NotFound();

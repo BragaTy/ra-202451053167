@@ -173,3 +173,75 @@ public IActionResult Remover(int id) =>
     _store.Remover(id) ? NoContent() : NotFound();
 ```
 
+---
+
+### 3. Como testar SEM o Postman (usando cURL)
+
+Como não tenho o Postman instalado, os 7 testes foram executados via terminal usando `curl.exe` (ou rodando o script `testes/testar.cmd` criado no projeto).
+
+#### Opção 1: Rodar o script automático
+Com a API rodando (`dotnet run`), abra outro terminal e execute:
+```cmd
+cd src\testes
+testar.cmd
+```
+O script executa as 7 chamadas em sequência e exibe o status de cada uma.
+
+#### Opção 2: Comandos manuais com cURL
+
+1. **POST `/api/livros` sem token (esperado: 401):**
+```bash
+curl.exe -i -X POST "http://localhost:5290/api/livros" -H "Content-Type: application/json" -d "{\"titulo\":\"Livro Teste\",\"autor\":\"Autor\",\"ano\":2026,\"disponivel\":true}"
+```
+→ Retorno: `HTTP/1.1 401 Unauthorized` (cabeçalho `WWW-Authenticate: Bearer`).
+
+2. **Login como Leitor (esperado: 200 + token):**
+```bash
+curl.exe -i -X POST "http://localhost:5290/api/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"leitor@biblioteca.com\",\"senha\":\"leitor123\"}"
+```
+→ Retorno: `HTTP/1.1 200 OK` com o JSON contendo `"token": "eyJhbGciOi...", "nome": "Lia Leitora", "role": "Leitor"`.
+
+3. **POST `/api/livros` com token de Leitor (esperado: 201):**
+```bash
+curl.exe -i -X POST "http://localhost:5290/api/livros" -H "Content-Type: application/json" -H "Authorization: Bearer <SEU_TOKEN_LEITOR>" -d "{\"titulo\":\"Clean Architecture\",\"autor\":\"Uncle Bob\",\"ano\":2017,\"disponivel\":true}"
+```
+→ Retorno: `HTTP/1.1 201 Created` e o livro cadastrado.
+
+4. **DELETE `/api/livros/1` com token de Leitor (esperado: 403):**
+```bash
+curl.exe -i -X DELETE "http://localhost:5290/api/livros/1" -H "Authorization: Bearer <SEU_TOKEN_LEITOR>"
+```
+→ Retorno: `HTTP/1.1 403 Forbidden` (o Leitor está logado, mas não tem permissão de apagar).
+
+5. **Login como Bibliotecário (esperado: 200 + token):**
+```bash
+curl.exe -i -X POST "http://localhost:5290/api/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"biblio@biblioteca.com\",\"senha\":\"biblio123\"}"
+```
+→ Retorno: `HTTP/1.1 200 OK` com o token contendo a role `"Bibliotecario"`.
+
+6. **DELETE `/api/livros/1` com token de Bibliotecário (esperado: 204):**
+```bash
+curl.exe -i -X DELETE "http://localhost:5290/api/livros/1" -H "Authorization: Bearer <SEU_TOKEN_BIBLIO>"
+```
+→ Retorno: `HTTP/1.1 204 No Content` (livro apagado com sucesso).
+
+7. **POST `/api/livros` com token expirado (esperado: 401):**
+Gera o token expirado:
+```bash
+curl.exe -X POST "http://localhost:5290/api/auth/login-expirado" -H "Content-Type: application/json" -d "{\"email\":\"leitor@biblioteca.com\",\"senha\":\"leitor123\"}"
+```
+Tenta criar livro com esse token:
+```bash
+curl.exe -i -X POST "http://localhost:5290/api/livros" -H "Content-Type: application/json" -H "Authorization: Bearer <TOKEN_EXPIRADO>" -d "{\"titulo\":\"Livro\",\"autor\":\"Autor\",\"ano\":2026,\"disponivel\":true}"
+```
+→ Retorno: `HTTP/1.1 401 Unauthorized` (o token já venceu, rejeitado pelo `ValidateLifetime`).
+
+---
+
+### 4. Conclusão da prática
+
+- **401 Unauthorized**: a API não sabe quem é o usuário (falta token, token inválido ou vencido).
+- **403 Forbidden**: a API sabe quem é o usuário, mas ele não tem a role/permissão exigida (Leitor tentando deletar livro).
+- O código em C# (`Program.cs`, `AuthController.cs`, `LivrosController.cs`) já foi totalmente implementado com base no gabarito e passou com 100% de sucesso em todos os testes.
+
+
