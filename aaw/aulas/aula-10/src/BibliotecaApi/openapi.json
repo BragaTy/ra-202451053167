@@ -1,0 +1,1009 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "API da Biblioteca",
+    "description": "API REST para gerenciamento do acervo e empréstimos de uma biblioteca.",
+    "contact": {
+      "name": "Equipe de Desenvolvimento",
+      "email": "dev@biblioteca.exemplo.com"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/api/Auth/login": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Autentica o usuário e gera um token JWT.",
+        "description": "Credenciais didáticas: bibliotecario / newton123.",
+        "requestBody": {
+          "description": "Usuário e senha.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredenciaisRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredenciaisRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredenciaisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token gerado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Usuário ou senha inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Autores": {
+      "get": {
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Lista todos os autores cadastrados.",
+        "responses": {
+          "200": {
+            "description": "Retorna a lista de autores.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Autor"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Cadastra um novo autor.",
+        "requestBody": {
+          "description": "Dados do autor a cadastrar.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Autor criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Autor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Autores/{id}": {
+      "get": {
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Obtém um autor pelo seu identificador.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do autor.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Autor encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Autor"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Autor não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Atualiza os dados de um autor existente.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do autor a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Novos dados do autor.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Autor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Autor atualizado com sucesso."
+          },
+          "404": {
+            "description": "Autor não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Remove um autor do cadastro.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do autor a remover.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Autor removido com sucesso."
+          },
+          "404": {
+            "description": "Autor não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Emprestimos": {
+      "get": {
+        "tags": [
+          "Empréstimos"
+        ],
+        "summary": "Lista todos os empréstimos registrados.",
+        "responses": {
+          "200": {
+            "description": "Retorna a lista de empréstimos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Emprestimo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Empréstimos"
+        ],
+        "summary": "Realiza um novo empréstimo de livro.",
+        "description": "O livro precisa estar disponível. O prazo padrão de devolução é de 14 dias.\r\n            \r\nExemplo de requisição:\r\n            \r\n    {\r\n        \"livroId\": 1,\r\n        \"nomeUsuario\": \"João Silva\"\r\n    }",
+        "requestBody": {
+          "description": "Dados do empréstimo.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Emprestimo"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Emprestimo"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Emprestimo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Empréstimo criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emprestimo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Livro não encontrado ou indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Emprestimos/{id}": {
+      "get": {
+        "tags": [
+          "Empréstimos"
+        ],
+        "summary": "Obtém um empréstimo pelo seu identificador.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do empréstimo.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Empréstimo encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emprestimo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Empréstimo não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Emprestimos/{id}/devolver": {
+      "patch": {
+        "tags": [
+          "Empréstimos"
+        ],
+        "summary": "Registra a devolução de um livro emprestado.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do empréstimo.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Livro devolvido com sucesso."
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Empréstimo não encontrado ou já devolvido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Livros": {
+      "get": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Lista os livros do acervo com paginação.",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "description": "Número da página (a partir de 1).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "tamanhoPagina",
+            "in": "query",
+            "description": "Itens por página (máximo 50).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de livros com metadados de paginação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivroRespostaPaginada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Cadastra um novo livro no acervo.",
+        "description": "Exemplo de requisição:\r\n            \r\n    POST /api/livros\r\n    {\r\n        \"titulo\": \"Dom Casmurro\",\r\n        \"genero\": \"Romance\",\r\n        \"anoPublicacao\": 1899,\r\n        \"autorId\": 1\r\n    }",
+        "requestBody": {
+          "description": "Dados do livro.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Livro criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Livro"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Livros/{id}": {
+      "get": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Obtém um livro pelo seu ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID do livro.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Livro encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Livro"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Livro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Atualiza um livro existente.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID do livro a atualizar.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Novos dados do livro.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Livro"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Atualizado com sucesso."
+          },
+          "404": {
+            "description": "Livro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Remove um livro do acervo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID do livro a remover.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removido com sucesso."
+          },
+          "404": {
+            "description": "Livro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Livros/buscar": {
+      "get": {
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Busca livros por título, gênero e/ou autor.",
+        "parameters": [
+          {
+            "name": "titulo",
+            "in": "query",
+            "description": "Trecho do título.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "genero",
+            "in": "query",
+            "description": "Gênero exato.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "autorId",
+            "in": "query",
+            "description": "ID do autor.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista (possivelmente vazia) de livros encontrados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Livro"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Autor": {
+        "required": [
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identificador único do autor.",
+            "format": "int32",
+            "example": 1
+          },
+          "nome": {
+            "maxLength": 200,
+            "minLength": 2,
+            "type": "string",
+            "description": "Nome completo do autor.",
+            "example": "Machado de Assis"
+          },
+          "pais": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string",
+            "description": "País de origem do autor.",
+            "nullable": true,
+            "example": "Brasil"
+          },
+          "biografia": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string",
+            "description": "Biografia resumida do autor.",
+            "nullable": true
+          },
+          "livros": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Livro"
+            },
+            "description": "Livros cadastrados para este autor.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Representa um autor de livros no sistema da biblioteca."
+      },
+      "CredenciaisRequest": {
+        "type": "object",
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "description": "Nome de usuário.",
+            "nullable": true
+          },
+          "senha": {
+            "type": "string",
+            "description": "Senha da conta.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Credenciais necessárias para obter um token JWT."
+      },
+      "Emprestimo": {
+        "required": [
+          "livroId",
+          "nomeUsuario"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identificador único do empréstimo.",
+            "format": "int32",
+            "example": 1
+          },
+          "livroId": {
+            "type": "integer",
+            "description": "Identificador do livro emprestado.",
+            "format": "int32",
+            "example": 1
+          },
+          "nomeUsuario": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "Nome da pessoa que realizou o empréstimo.",
+            "example": "João Silva"
+          },
+          "dataEmprestimo": {
+            "type": "string",
+            "description": "Data e hora em que o empréstimo foi realizado.",
+            "format": "date-time"
+          },
+          "dataDevolucaoPrevista": {
+            "type": "string",
+            "description": "Data prevista para devolução do livro.",
+            "format": "date-time"
+          },
+          "dataDevolucaoEfetiva": {
+            "type": "string",
+            "description": "Data efetiva de devolução, quando o livro já foi devolvido.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusEmprestimo"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Representa um empréstimo de livro feito por um usuário."
+      },
+      "Livro": {
+        "required": [
+          "autorId",
+          "titulo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Identificador único do livro.",
+            "format": "int32",
+            "example": 1
+          },
+          "titulo": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string",
+            "description": "Título do livro.",
+            "example": "Dom Casmurro"
+          },
+          "isbn": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "ISBN do livro, quando informado.",
+            "nullable": true,
+            "example": "978-85-359-0277-5"
+          },
+          "anoPublicacao": {
+            "maximum": 2100,
+            "minimum": 1000,
+            "type": "integer",
+            "description": "Ano de publicação do livro.",
+            "format": "int32",
+            "example": 1899
+          },
+          "genero": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string",
+            "description": "Gênero literário do livro.",
+            "nullable": true,
+            "example": "Romance"
+          },
+          "autorId": {
+            "type": "integer",
+            "description": "Identificador do autor do livro.",
+            "format": "int32",
+            "example": 1
+          },
+          "disponivel": {
+            "type": "boolean",
+            "description": "Indica se o livro está disponível para empréstimo."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Representa um livro do acervo da biblioteca."
+      },
+      "LivroRespostaPaginada": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Livro"
+            },
+            "description": "Itens da página atual.",
+            "nullable": true
+          },
+          "pagina": {
+            "type": "integer",
+            "description": "Número da página atual, começando em 1.",
+            "format": "int32"
+          },
+          "tamanhoPagina": {
+            "type": "integer",
+            "description": "Quantidade máxima de itens por página.",
+            "format": "int32"
+          },
+          "totalItens": {
+            "type": "integer",
+            "description": "Quantidade total de itens disponíveis.",
+            "format": "int32"
+          },
+          "totalPaginas": {
+            "type": "integer",
+            "description": "Quantidade total de páginas disponíveis.",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Representa uma página de resultados com metadados de paginação."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "StatusEmprestimo": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "description": "Estados possíveis de um empréstimo.",
+        "format": "int32"
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token JWT para autenticar chamadas protegidas.",
+            "nullable": true
+          },
+          "expiraEm": {
+            "type": "string",
+            "description": "Data e hora de expiração do token.",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Token JWT e instante em que ele expira."
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Informe o token JWT obtido em POST /api/auth/login.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
+}

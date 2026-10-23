@@ -1,6 +1,141 @@
-@BibliotecaApi_HostAddress = http://localhost:5102
+@baseUrl = http://localhost:5102
+@token = COLE_O_TOKEN_JWT_AQUI
 
-GET {{BibliotecaApi_HostAddress}}/weatherforecast/
+### Documentação interativa
+GET {{baseUrl}}/scalar
+
+###
+
+### OpenAPI JSON
+GET {{baseUrl}}/openapi/v1.json
 Accept: application/json
 
 ###
+
+### Listar autores
+GET {{baseUrl}}/api/autores
+
+###
+
+### Obter autor por ID
+GET {{baseUrl}}/api/autores/1
+
+###
+
+### Criar autor
+POST {{baseUrl}}/api/autores
+Content-Type: application/json
+
+{
+  "nome": "Monteiro Lobato",
+  "pais": "Brasil",
+  "biografia": "Escritor brasileiro."
+}
+
+###
+
+### Atualizar autor
+PUT {{baseUrl}}/api/autores/1
+Content-Type: application/json
+
+{
+  "nome": "Machado de Assis",
+  "pais": "Brasil",
+  "biografia": "Escritor brasileiro."
+}
+
+###
+
+### Remover autor
+DELETE {{baseUrl}}/api/autores/3
+
+###
+
+### Listar livros com paginação
+GET {{baseUrl}}/api/livros?pagina=1&tamanhoPagina=10
+
+###
+
+### Obter livro por ID
+GET {{baseUrl}}/api/livros/1
+
+###
+
+### Buscar livros
+GET {{baseUrl}}/api/livros/buscar?genero=Romance&autorId=1
+
+###
+
+### Criar livro
+POST {{baseUrl}}/api/livros
+Content-Type: application/json
+
+{
+  "titulo": "O Sítio do Picapau Amarelo",
+  "isbn": "978-85-01-00001-0",
+  "anoPublicacao": 1920,
+  "genero": "Infantil",
+  "autorId": 2,
+  "disponivel": true
+}
+
+###
+
+### Atualizar livro
+PUT {{baseUrl}}/api/livros/1
+Content-Type: application/json
+
+{
+  "titulo": "Dom Casmurro",
+  "isbn": "978-85-359-0277-5",
+  "anoPublicacao": 1899,
+  "genero": "Romance",
+  "autorId": 1,
+  "disponivel": true
+}
+
+###
+
+### Remover livro
+DELETE {{baseUrl}}/api/livros/5
+
+###
+
+### Login (copie o token retornado para @token)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "bibliotecario",
+  "senha": "newton123"
+}
+
+###
+
+### Listar empréstimos (requer token JWT)
+GET {{baseUrl}}/api/emprestimos
+Authorization: Bearer {{token}}
+
+###
+
+### Obter empréstimo por ID (requer token JWT)
+GET {{baseUrl}}/api/emprestimos/1
+Authorization: Bearer {{token}}
+
+###
+
+### Criar empréstimo (requer token JWT)
+POST {{baseUrl}}/api/emprestimos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "livroId": 2,
+  "nomeUsuario": "João Silva"
+}
+
+###
+
+### Devolver empréstimo (requer token JWT)
+PATCH {{baseUrl}}/api/emprestimos/1/devolver
+Authorization: Bearer {{token}}

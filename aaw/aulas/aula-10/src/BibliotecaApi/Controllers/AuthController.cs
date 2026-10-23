@@ -11,16 +11,32 @@ namespace BibliotecaApi.Controllers;
 // do Swagger tenha o que autorizar. Credenciais didáticas fixas abaixo.
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
+[Tags("Autenticação")]
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _config;
 
     public AuthController(IConfiguration config) => _config = config;
 
+    /// <summary>Credenciais necessárias para obter um token JWT.</summary>
+    /// <param name="Usuario">Nome de usuário.</param>
+    /// <param name="Senha">Senha da conta.</param>
     public record CredenciaisRequest(string Usuario, string Senha);
+
+    /// <summary>Token JWT e instante em que ele expira.</summary>
+    /// <param name="Token">Token JWT para autenticar chamadas protegidas.</param>
+    /// <param name="ExpiraEm">Data e hora de expiração do token.</param>
     public record TokenResponse(string Token, DateTime ExpiraEm);
 
+    /// <summary>Autentica o usuário e gera um token JWT.</summary>
+    /// <remarks>Credenciais didáticas: bibliotecario / newton123.</remarks>
+    /// <param name="credenciais">Usuário e senha.</param>
+    /// <response code="200">Token gerado com sucesso.</response>
+    /// <response code="401">Usuário ou senha inválidos.</response>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult Login([FromBody] CredenciaisRequest credenciais)
     {
         // Usuário didático fixo: bibliotecario / newton123

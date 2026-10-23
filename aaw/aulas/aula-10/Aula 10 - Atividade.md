@@ -13,7 +13,7 @@ Vocês receberam o contrato OpenAPI de uma API que NUNCA viram — e nada mais: 
 
 *⏱️ Tempo: 30 minutos  |  👥 Formato: em duplas  |  Só vale usar o que está impresso neste handout.*
 
-> **Nomes:** ____________________   **Turma:** ____________________   **Data:** ___ / ___ / ______
+> **Nomes:** MATHEUS BRAGA DE SOUSA   **Turma:**    **Data:**  22/10/2026
 
 ## CARD 01 — O contrato — especificação OpenAPI (YAML)
 

@@ -28,7 +28,22 @@ Abra os 3 controllers em `Controllers/` e preencha esta tabela:
 
 | Método HTTP | Rota | O que faz | Parâmetros |
 |-------------|------|-----------|------------|
-| ? | ? | ? | ? |
+| `POST` | `/api/auth/login` | Autentica o usuário e gera o token JWT | Body: `CredenciaisRequest` (`usuario`, `senha`) |
+| `GET` | `/api/autores` | Lista todos os autores cadastrados | Nenhum |
+| `GET` | `/api/autores/{id}` | Busca um autor pelo ID | Path: `id` (int) |
+| `POST` | `/api/autores` | Cadastra um novo autor | Body: `Autor` |
+| `PUT` | `/api/autores/{id}` | Atualiza os dados de um autor existente | Path: `id` (int), Body: `Autor` |
+| `DELETE` | `/api/autores/{id}` | Remove um autor pelo ID | Path: `id` (int) |
+| `GET` | `/api/livros` | Lista os livros do acervo com paginação | Query: `pagina` (int, padrão 1), `tamanhoPagina` (int, padrão 10) |
+| `GET` | `/api/livros/{id}` | Busca um livro pelo ID | Path: `id` (int) |
+| `GET` | `/api/livros/buscar` | Filtra livros por título, gênero e/ou autor | Query: `titulo`, `genero`, `autorId` |
+| `POST` | `/api/livros` | Cadastra um novo livro no acervo | Body: `Livro` |
+| `PUT` | `/api/livros/{id}` | Atualiza os dados de um livro existente | Path: `id` (int), Body: `Livro` |
+| `DELETE` | `/api/livros/{id}` | Remove um livro do acervo | Path: `id` (int) |
+| `GET` | `/api/emprestimos` | Lista todos os empréstimos (exige token JWT) | Header: `Authorization: Bearer <token>` |
+| `GET` | `/api/emprestimos/{id}` | Busca um empréstimo pelo ID (exige token JWT) | Path: `id` (int) |
+| `POST` | `/api/emprestimos` | Registra um novo empréstimo (exige token JWT) | Body: `Emprestimo` (`livroId`, `nomeUsuario`) |
+| `PATCH` | `/api/emprestimos/{id}/devolver` | Registra a devolução de um livro (exige token JWT) | Path: `id` (int) |
 
 **Dica:** olhe os atributos `[HttpGet]`, `[HttpPost]`, `[HttpPut]`, `[HttpDelete]`, `[HttpPatch]` e o `[Route]` da classe.
 
@@ -37,17 +52,27 @@ Abra os 3 controllers em `Controllers/` e preencha esta tabela:
 Abra os arquivos em `Models/` e identifique:
 
 - Quais são as entidades?
+  - **Resposta:** `Autor`, `Livro`, `Emprestimo` (além do enum `StatusEmprestimo` e da classe auxiliar `RespostaPaginada<T>`).
 - Quais campos são obrigatórios (`[Required]`)?
+  - **Resposta:** Em `Autor`: `Nome`. Em `Livro`: `Titulo` e `AutorId`. Em `Emprestimo`: `LivroId` e `NomeUsuario`.
 - Quais validações existem (`[StringLength]`, `[Range]`)?
+  - **Resposta:**
+    - `Autor`: `Nome` (`[StringLength(200, MinimumLength = 2)]`), `Pais` (`[StringLength(100)]`), `Biografia` (`[StringLength(1000)]`).
+    - `Livro`: `Titulo` (`[StringLength(300, MinimumLength = 1)]`), `Isbn` (`[StringLength(20)]`), `AnoPublicacao` (`[Range(1000, 2100)]`), `Genero` (`[StringLength(100)]`).
+    - `Emprestimo`: `NomeUsuario` (`[StringLength(200)]`).
 - Qual a relação entre as entidades? (Autor → Livro → Empréstimo)
+  - **Resposta:** Um `Autor` possui vários `Livros` (1:N, ligados por `AutorId` no livro), e um `Livro` pode ter `Empréstimos` vinculados a ele pelo campo `LivroId`.
 
 ### Exercício 1.3 — Mapeie os códigos de resposta
 
 Execute a API e teste com `curl` ou um cliente HTTP. Descubra:
 
 - O que acontece ao buscar um autor que não existe? (qual código HTTP?)
+  - **Resposta:** Retorna **`404 Not Found`** com uma mensagem JSON informando que o autor não foi encontrado.
 - O que acontece ao tentar emprestar um livro já emprestado?
+  - **Resposta:** Retorna **`409 Conflict`** informando que o livro não foi encontrado ou não está disponível para empréstimo.
 - O que acontece ao enviar um POST sem os campos obrigatórios?
+  - **Resposta:** Retorna **`400 Bad Request`** com os erros de validação do `ModelState` (ProblemDetails).
 
 ---
 
@@ -119,9 +144,13 @@ Acesse no navegador: `http://localhost:<porta>/swagger`
 
 **Observe e responda:**
 - Os endpoints aparecem? Estão agrupados?
+  - **Resposta:** Sim, todos os endpoints aparecem agrupados por controller (`Auth`, `Autores`, `Emprestimos`, `Livros`).
 - Clique em um endpoint e depois em "Try it out" — funciona?
+  - **Resposta:** Funciona nos endpoints públicos (`Autores` e `Livros`), mas nos endpoints de `Emprestimos` retorna `401 Unauthorized` porque ainda não configuramos o botão `Authorize` para enviar o token JWT.
 - Os modelos de dados aparecem na seção "Schemas" no final?
+  - **Resposta:** Sim, aparecem os schemas das classes usadas nos parâmetros e respostas.
 - O que está faltando na documentação? (descrições, exemplos, etc.)
+  - **Resposta:** Faltam as descrições do que cada endpoint faz, exemplos de preenchimento nos campos, todos os códigos de erro possíveis (`400`, `401`, `404`, `409`) e o botão `Authorize` para autenticação JWT.
 
 ---
 
@@ -369,6 +398,7 @@ scheme "Bearer" declarado acima — é o `$ref` que você viu nos slides.)*
 
 **Pergunta:** onde essa exigência de token aparece no `/swagger/v1/swagger.json`?
 Procure por `securitySchemes` e `security`.
+- **Resposta:** A definição do esquema Bearer JWT aparece dentro de `"components" -> "securitySchemes" -> "Bearer"`, e a exigência do token aparece no bloco `"security"` na raiz do arquivo `swagger.json` (referenciando `"Bearer": []`).
 
 ---
 
