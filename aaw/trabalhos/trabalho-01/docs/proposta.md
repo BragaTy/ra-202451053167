@@ -7,53 +7,62 @@
 
 ## 1. Domínio e problema
 
-A aplicação é um sistema simples de controle de atendimentos para uma empresa de suporte técnico. O problema que ela resolve é a falta de organização para registrar os clientes atendidos, acompanhar os chamados abertos e controlar o prazo e o status de cada suporte. O sistema é voltado para os atendentes e para o administrador da empresa de suporte.
+A aplicação é um sistema de controle de atendimentos para uma empresa de suporte técnico (Help Desk). O problema resolvido é a desorganização no registro dos clientes atendidos, no cálculo de prazos de atendimento (SLA) e no acompanhamento do status de cada chamado aberto. O sistema atende a equipe de suporte e o gestor da empresa, centralizando o cadastro de clientes e a fila de chamados.
 
 ---
 
 ## 2. Entidades
 
 ### Entidade A: `Clientes`
-Representa quem contrata o serviço de suporte.
-- `Id`: identificador único no banco (ObjectId);
-- `Nome`: nome do cliente;
-- `Email`: e-mail para contato;
-- `Telefone`: telefone do cliente;
-- `Plano`: tipo de suporte contratado ("Basico" ou "Completo");
-- `Ativo`: indica se o cliente está ativo para receber suporte.
+Representa o cliente atendido pela empresa de suporte.
+- `Id`: identificador único no banco (`ObjectId`);
+- `Nome`: nome do cliente ou empresa atendida;
+- `Email`: e-mail de contato;
+- `Telefone`: telefone de contato;
+- `Plano`: plano contratado (`"Basico"` ou `"Completo"`);
+- `Ativo`: booleano que indica se o cadastro está ativo.
 
 ### Entidade B: `Chamados`
-Representa um atendimento de suporte aberto para um cliente.
-- `Id`: identificador único no banco (ObjectId);
+Representa uma solicitação de suporte aberta para um cliente.
+- `Id`: identificador único no banco (`ObjectId`);
 - `ClienteId`: referência ao `Id` do cliente atendido;
-- `Assunto`: título curto do problema;
-- `Descricao`: explicação do que aconteceu;
-- `Prioridade`: urgência do chamado ("Baixa", "Media" ou "Alta");
-- `PrazoHoras`: prazo de atendimento em horas (calculado automaticamente pela regra de negócio);
-- `Status`: situação do chamado ("Aberto", "EmAtendimento" ou "Concluido").
+- `Assunto`: título resumido do problema;
+- `Descricao`: explicação detalhada da solicitação;
+- `Prioridade`: urgência do atendimento (`"Baixa"`, `"Media"` ou `"Alta"`);
+- `PrazoHoras`: prazo máximo em horas calculado automaticamente pelo serviço conforme a prioridade;
+- `Status`: situação do chamado (`"Aberto"`, `"EmAtendimento"` ou `"Concluido"`);
+- `CriadoPorId`: identificador do usuário que registrou o chamado (para controle de *ownership* / IDOR);
+- `DataAbertura`: data e hora de abertura do chamado.
 
 ### Relacionamento e Modelagem NoSQL:
-O relacionamento entre `Clientes` e `Chamados` é de **1 para N** (um cliente pode ter vários chamados de suporte).
+O relacionamento entre `Clientes` e `Chamados` é de **1 para N** (um cliente pode ter vários chamados abertos ao longo do tempo).
 
-- **Modelagem por Referência (`ClienteId`):** Os `Chamados` são salvos em uma coleção separada da coleção de `Clientes`, guardando apenas o `ClienteId`. Justificativa: um cliente pode abrir muitos chamados ao longo do tempo e os chamados precisam ser listados e atualizados individualmente na tela principal, sem precisar carregar ou regravar o cadastro inteiro do cliente a cada atendimento.
+- **Modelagem por Referência (`ClienteId`):** Os `Chamados` são armazenados em uma coleção própria (`chamados`), referenciando o cliente pelo campo `ClienteId`. Justificativa: um cliente acumula vários chamados ao longo do tempo e a equipe de suporte consulta, filtra e atualiza o status dos chamados de forma independente; separar em duas coleções evita que o documento do cliente cresça sem limite e permite paginar e filtrar a fila de chamados diretamente.
 
 ---
 
 ## 3. Endpoints previstos
 
+Seguindo o padrão visto em aula (substantivos no plural, versionamento `/api/v1`, paginação/filtros via query string e rota aninhada de até 2 níveis):
+
+### Autenticação (`Auth`)
+- `POST /api/v1/auth/registrar`: cadastra um novo usuário com perfil padrão `usuario`.
+- `POST /api/v1/auth/login`: autentica o usuário e devolve o token JWT.
+
 ### Entidade `Clientes`
-- `GET /api/clientes`: lista todos os clientes.
-- `GET /api/clientes/{id}`: busca os dados de um cliente pelo id.
-- `POST /api/clientes`: cadastra um novo cliente.
-- `PUT /api/clientes/{id}`: atualiza os dados de um cliente.
-- `DELETE /api/clientes/{id}`: remove um cliente (restrito ao perfil `admin`).
+- `GET /api/v1/clientes?page=1&size=20`: lista os clientes cadastrados de forma paginada.
+- `GET /api/v1/clientes/{id}`: busca os detalhes de um cliente pelo `id`.
+- `GET /api/v1/clientes/{id}/chamados`: rota aninhada que lista os chamados de um cliente específico.
+- `POST /api/v1/clientes`: cadastra um novo cliente (restrito ao perfil `admin`).
+- `PUT /api/v1/clientes/{id}`: atualiza os dados de um cliente (restrito ao perfil `admin`).
+- `DELETE /api/v1/clientes/{id}`: remove um cliente (restrito ao perfil `admin`).
 
 ### Entidade `Chamados`
-- `GET /api/chamados`: lista todos os chamados de suporte.
-- `GET /api/chamados/{id}`: mostra os detalhes de um chamado específico.
-- `POST /api/chamados`: abre um novo chamado de suporte.
-- `PUT /api/chamados/{id}`: atualiza o status ou dados de um chamado.
-- `DELETE /api/chamados/{id}`: exclui um chamado (restrito ao perfil `admin`).
+- `GET /api/v1/chamados?page=1&size=20&status=Aberto`: lista os chamados com paginação e filtro por status ou prioridade.
+- `GET /api/v1/chamados/{id}`: busca os detalhes de um chamado específico.
+- `POST /api/v1/chamados`: abre um novo chamado calculando automaticamente o `PrazoHoras`.
+- `PUT /api/v1/chamados/{id}`: atualiza os dados e o status de um chamado (apenas o criador do chamado ou `admin`).
+- `DELETE /api/v1/chamados/{id}`: remove um chamado (restrito ao perfil `admin`).
 
 ---
 
@@ -61,29 +70,38 @@ O relacionamento entre `Clientes` e `Chamados` é de **1 para N** (um cliente po
 
 A camada de serviço aplicará as seguintes regras nas operações de escrita:
 
-1. **Cálculo automático do prazo (`PrazoHoras`):** ao criar um chamado, o serviço define o prazo automaticamente conforme a `Prioridade` escolhida (`Alta` = 8 horas, `Media` = 24 horas, `Baixa` = 48 horas).
-2. **Validação de cliente ativo:** não é permitido abrir chamado para um cliente que esteja com `Ativo = false`.
-3. **Transição de estado:** um chamado que já está com status `"Concluido"` não pode voltar para `"Aberto"`.
+1. **Cálculo automático de SLA (`PrazoHoras`):** ao abrir um chamado, o serviço define o prazo automaticamente conforme a `Prioridade` (`Alta` = 8h, `Media` = 24h, `Baixa` = 48h), aplicando desconto de metade do tempo caso o cliente possua o plano `"Completo"` (4h, 12h e 24h).
+2. **Validação de cliente ativo:** o serviço impede a abertura de chamados para clientes com `Ativo = false`.
+3. **Transição de estado:** um chamado com status `"Concluido"` não pode ser reaberto nem voltar para `"Aberto"`.
 
 ---
 
 ## 5. Casos de erro
 
-1. **Regra de negócio / Dado inválido (`400 Bad Request`):** tentar abrir um chamado para um cliente inativo ou tentar reabrir um chamado já `"Concluido"` devolve `400 Bad Request`.
-2. **Registro não encontrado (`404 Not Found`) e Duplicidade (`409 Conflict`):** buscar ou deletar um `id` que não existe devolve `404 Not Found`; tentar cadastrar dois clientes com o mesmo `Email` devolve `409 Conflict`.
+As respostas de erro seguirão o padrão **Problem Details (RFC 9457)** visto em aula:
+
+1. **Violação de regra de negócio / dado inválido (`400 Bad Request`):** tentar abrir chamado para cliente inativo ou tentar reabrir chamado já `"Concluido"` retorna `400 Bad Request`.
+2. **Recurso inexistente (`404 Not Found`) e Conflito (`409 Conflict`):** buscar ou remover `id` inexistente retorna `404 Not Found`; cadastrar cliente com `Email` já existente retorna `409 Conflict`.
+3. **Autenticação e Autorização (`401 Unauthorized` e `403 Forbidden`):** requisição sem token válido retorna `401`; tentativa de deletar registro sem perfil `admin` ou editar chamado de outro usuário (prevenção de IDOR) retorna `403`.
 
 ---
 
 ## 6. Stack escolhida
 
-- **Backend:** .NET 10 (C#) com ASP.NET Core Web API.
-- **Banco de Dados:** MongoDB (NoSQL).
-- **Frontend:** HTML, CSS e JavaScript puro com `fetch`.
+- **Backend:** .NET 10 (C#) com ASP.NET Core Web API estruturada em camadas (Controllers, Services e Repositories com interfaces).
+- **Banco de Dados:** MongoDB (NoSQL), com string de conexão lida por variável de ambiente.
+- **Frontend:** HTML, CSS e JavaScript puro consumindo a API de forma assíncrona (`fetch`), sem recarregar o navegador.
 
 ---
 
 ## 7. Segurança e testes
 
-- **Autenticação:** login e registro com JWT (`Authorization: Bearer <token>`) e tempo de expiração configurado.
-- **Autorização (RBAC):** dois perfis no token (`admin` e `usuario`), onde a exclusão de registros (`DELETE`) é restrita ao perfil `admin`.
-- **Testes Unitários:** testes com xUnit na camada de serviço cobrindo 2 cenários de sucesso (cálculo automático do prazo e abertura de chamado para cliente ativo) e 2 cenários de erro (bloqueio de chamado para cliente inativo e bloqueio de alteração de chamado concluído), rodados com `dotnet test`.
+- **Autenticação JWT e Boas Práticas OWASP:**
+  - Token JWT assinado com `HS256` (chave de 32+ caracteres via variável de ambiente), claims `sub`, `email` e `role`, e expiração configurada (`exp`).
+  - Uso de **DTOs de entrada restritos** para evitar *Mass Assignment* (o cliente não consegue enviar `Perfil = "admin"` nem forçar o `PrazoHoras` manualmente).
+  - Prevenção de **Broken Access Control (IDOR)**: validação de *ownership* para garantir que um usuário comum só altere os próprios chamados.
+- **Autorização (RBAC):**
+  - `usuario` (atendente): consulta clientes, abre chamados e atualiza os próprios chamados;
+  - `admin` (gestor): gerencia o cadastro de clientes e pode editar ou remover qualquer registro.
+- **Testes Unitários (xUnit):**
+  - Testes na camada de serviço usando o padrão **AAA (Arrange, Act, Assert)**, nomenclatura `Metodo_Cenario_ResultadoEsperado`, `[Fact]` e `[Theory]`/`[InlineData]` com repositórios isolados por interface, cobrindo pelo menos 2 cenários de sucesso e 2 de erro e executáveis com `dotnet test`.
