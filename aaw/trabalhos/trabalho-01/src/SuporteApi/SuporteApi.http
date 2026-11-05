@@ -1,6 +1,21 @@
-@SuporteApi_HostAddress = http://localhost:5273
+@host = http://localhost:5050
 
-GET {{SuporteApi_HostAddress}}/weatherforecast/
+GET {{host}}/api/v1/clientes?page=1&size=20
 Accept: application/json
 
 ###
+
+GET {{host}}/api/v1/chamados?page=1&size=20&status=Aberto
+Accept: application/json
+
+###
+
+POST {{host}}/api/v1/chamados
+Content-Type: application/json
+
+{
+  "clienteId": "6717f1c2a3b4c5d6e7f80911",
+  "assunto": "Sistema fora do ar",
+  "descricao": "Não é possível acessar o painel principal.",
+  "prioridade": "Alta"
+}
