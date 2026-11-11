@@ -19,6 +19,9 @@ await app.Services.CriarIndicesMongoAsync();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Tela do Swagger em /swagger, lendo o documento gerado pelo .NET acima.
+    app.UseSwaggerUI(o => o.SwaggerEndpoint("/openapi/v1.json", "SuporteApi v1"));
 }
 
 app.UseAuthorization();

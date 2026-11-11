@@ -61,7 +61,8 @@ Nenhuma string de conexão ou chave secreta fica fixa no código-fonte. Defina a
 
 3. **Execute a aplicação:**
    ```bash
-   dotnet run --project src/SuporteApi
+   cd src
+   dotnet run
    ```
 
 4. **Acesse no navegador:**

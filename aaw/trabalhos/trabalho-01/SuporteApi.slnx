@@ -1,5 +1,5 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/SuporteApi/SuporteApi.csproj" />
+    <Project Path="src/SuporteApi.csproj" />
   </Folder>
 </Solution>
