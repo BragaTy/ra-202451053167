@@ -1,0 +1,12 @@
+# Sobe o MongoDB local: docker compose up -d
+services:
+  mongodb:
+    image: mongo:7
+    container_name: suporte-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db # mantém os dados quando o container reinicia
+
+volumes:
+  mongo-data:
