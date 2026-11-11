@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>085b42b6-b43a-4df7-ab45-f600ee415732</UserSecretsId>
+    <!-- Gera o XML dos comentários /// para o Swagger; 1591 = aviso de classe sem comentário. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

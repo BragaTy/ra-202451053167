@@ -1,4 +1,6 @@
 using SuporteApi.Data;
+using SuporteApi.Erros;
+using SuporteApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +13,18 @@ builder.Services.AddOpenApi();
 // MongoDB: conexão vinda das variáveis de ambiente + repositórios.
 builder.Services.AddMongoDb(builder.Configuration);
 
+// Camada de serviço (regras de negócio).
+builder.Services.AddScoped<ClienteService>();
+
+// Erros no padrão Problem Details (RFC 9457), tratados em um lugar só.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<TratadorDeErros>();
+
 var app = builder.Build();
 
 await app.Services.CriarIndicesMongoAsync();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
