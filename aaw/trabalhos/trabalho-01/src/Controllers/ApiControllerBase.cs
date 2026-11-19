@@ -2,13 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace SuporteApi.Controllers;
 
+// Base comum: [ApiController] valida os DTOs e devolve 400 automaticamente;
+// 401 e 403 podem vir de qualquer endpoint protegido.
 [ApiController]
 [Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
-public abstract class ApiControllerBase : ControllerBase
-{
-    // Resposta temporária: some quando a camada de serviço for ligada aos controllers.
-    protected ObjectResult NaoImplementado() =>
-        Problem(statusCode: StatusCodes.Status501NotImplemented, title: "Endpoint ainda não implementado.");
-}
+public abstract class ApiControllerBase : ControllerBase;

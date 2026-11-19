@@ -18,6 +18,7 @@ builder.Services.AddAutenticacaoJwt(builder.Configuration);
 
 // Camada de serviço (regras de negócio).
 builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<ChamadoService>();
 builder.Services.AddScoped<AuthService>();
 
 // Erros no padrão Problem Details (RFC 9457), tratados em um lugar só.

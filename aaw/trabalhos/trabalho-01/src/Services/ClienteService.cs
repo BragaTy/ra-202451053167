@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using SuporteApi.Dtos;
 using SuporteApi.Erros;
 using SuporteApi.Models;
@@ -10,8 +9,6 @@ namespace SuporteApi.Services;
 // por isso pode ser testado com repositórios falsos (sem banco).
 public class ClienteService(IClienteRepository clientes, IChamadoRepository chamados)
 {
-    public const int TamanhoMaximoPagina = 100;
-
     public Task<PaginaResultado<Cliente>> ListarAsync(int page, int size)
     {
         ValidarPaginacao(page, size);
@@ -85,19 +82,9 @@ public class ClienteService(IClienteRepository clientes, IChamadoRepository cham
             throw new NaoEncontradoException($"Cliente {id} não encontrado.");
     }
 
-    private static void ValidarId(string id)
-    {
-        if (!ObjectId.TryParse(id, out _))
-            throw new RegraDeNegocioException($"Id '{id}' inválido: deve ter 24 caracteres hexadecimais.");
-    }
+    private static void ValidarId(string id) => Validacao.Id(id);
 
-    private static void ValidarPaginacao(int page, int size)
-    {
-        if (page < 1)
-            throw new RegraDeNegocioException("O parâmetro page deve ser maior ou igual a 1.");
-        if (size < 1 || size > TamanhoMaximoPagina)
-            throw new RegraDeNegocioException($"O parâmetro size deve estar entre 1 e {TamanhoMaximoPagina}.");
-    }
+    private static void ValidarPaginacao(int page, int size) => Validacao.Paginacao(page, size);
 
     // E-mail comparado sem diferença de maiúsculas e espaços.
     private static string NormalizarEmail(string email) => email.Trim().ToLowerInvariant();
