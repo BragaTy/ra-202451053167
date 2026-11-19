@@ -4,6 +4,8 @@ namespace SuporteApi.Controllers;
 
 [ApiController]
 [Produces("application/json")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public abstract class ApiControllerBase : ControllerBase
 {
     // Resposta temporária: some quando a camada de serviço for ligada aos controllers.

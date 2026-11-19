@@ -6,6 +6,12 @@ namespace SuporteApi.Erros;
 // 400 Bad Request: dado inválido ou regra de negócio violada.
 public class RegraDeNegocioException(string mensagem) : Exception(mensagem);
 
+// 401 Unauthorized: credenciais inválidas no login.
+public class NaoAutorizadoException(string mensagem) : Exception(mensagem);
+
+// 403 Forbidden: usuário autenticado, mas sem permissão (ex.: chamado de outro usuário).
+public class AcessoNegadoException(string mensagem) : Exception(mensagem);
+
 // 404 Not Found: o registro pedido não existe.
 public class NaoEncontradoException(string mensagem) : Exception(mensagem);
 

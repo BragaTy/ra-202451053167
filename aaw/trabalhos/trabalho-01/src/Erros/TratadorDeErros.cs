@@ -13,6 +13,8 @@ public class TratadorDeErros(IProblemDetailsService problemDetails, ILogger<Trat
         var (status, titulo, detalhe) = erro switch
         {
             RegraDeNegocioException => (400, "Requisição inválida.", erro.Message),
+            NaoAutorizadoException => (401, "Não autenticado.", erro.Message),
+            AcessoNegadoException => (403, "Acesso negado.", erro.Message),
             NaoEncontradoException => (404, "Recurso não encontrado.", erro.Message),
             ConflitoException => (409, "Conflito.", erro.Message),
 

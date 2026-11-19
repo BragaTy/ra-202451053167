@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SuporteApi.Dtos;
 using SuporteApi.Models;
@@ -7,6 +8,8 @@ namespace SuporteApi.Controllers;
 
 // O controller só traduz HTTP <-> serviço. Regras ficam no ClienteService,
 // e os erros (400, 404, 409) saem pelo TratadorDeErros.
+// Leitura: qualquer usuário logado. Escrita (POST, PUT, DELETE): só admin.
+[Authorize]
 [Route("api/v1/clientes")]
 public class ClientesController(ClienteService service) : ApiControllerBase
 {
@@ -35,6 +38,7 @@ public class ClientesController(ClienteService service) : ApiControllerBase
 
     /// <summary>Cadastra um cliente.</summary>
     [HttpPost]
+    [Authorize(Roles = Perfis.Admin)]
     [ProducesResponseType<Cliente>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -47,6 +51,7 @@ public class ClientesController(ClienteService service) : ApiControllerBase
 
     /// <summary>Atualiza um cliente (também ativa ou desativa).</summary>
     [HttpPut("{id}")]
+    [Authorize(Roles = Perfis.Admin)]
     [ProducesResponseType<Cliente>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,6 +61,7 @@ public class ClientesController(ClienteService service) : ApiControllerBase
 
     /// <summary>Remove um cliente sem chamados.</summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = Perfis.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

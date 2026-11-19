@@ -23,6 +23,7 @@ public static class MongoDbSetup
         // A aplicação depende da interface; a classe concreta só aparece aqui.
         services.AddSingleton<IClienteRepository, ClienteRepository>();
         services.AddSingleton<IChamadoRepository, ChamadoRepository>();
+        services.AddSingleton<IUsuarioRepository, UsuarioRepository>();
 
         return services;
     }
@@ -36,6 +37,12 @@ public static class MongoDbSetup
         await db.GetCollection<Cliente>(ClienteRepository.Colecao).Indexes.CreateOneAsync(
             new CreateIndexModel<Cliente>(
                 Builders<Cliente>.IndexKeys.Ascending(c => c.Email),
+                new CreateIndexOptions { Unique = true }));
+
+        // E-mail de login único.
+        await db.GetCollection<Usuario>(UsuarioRepository.Colecao).Indexes.CreateOneAsync(
+            new CreateIndexModel<Usuario>(
+                Builders<Usuario>.IndexKeys.Ascending(u => u.Email),
                 new CreateIndexOptions { Unique = true }));
 
         // Acelera a rota aninhada /clientes/{id}/chamados.

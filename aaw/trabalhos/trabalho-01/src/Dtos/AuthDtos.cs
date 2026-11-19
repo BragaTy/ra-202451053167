@@ -11,3 +11,8 @@ public record RegistrarRequest(
 public record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Senha);
+
+// Respostas: nunca devolvem o hash da senha.
+public record UsuarioResponse(string Id, string Nome, string Email, string Perfil);
+
+public record LoginResponse(string Token, DateTime ExpiraEm, string Nome, string Perfil);
