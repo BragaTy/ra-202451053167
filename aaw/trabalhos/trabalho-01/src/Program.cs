@@ -52,6 +52,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Página web (wwwroot/index.html) servida na raiz: http://localhost:5050
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

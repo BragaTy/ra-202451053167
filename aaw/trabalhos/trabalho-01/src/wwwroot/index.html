@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HelpDesk · Suporte Técnico</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <span class="logo" aria-hidden="true">HD</span>
+      <div>
+        <strong>HelpDesk</strong>
+        <small>Clientes e chamados de suporte</small>
+      </div>
+    </div>
+    <nav id="menu" class="menu" hidden>
+      <a href="#/chamados" data-rota="chamados">Chamados</a>
+      <a href="#/clientes" data-rota="clientes">Clientes</a>
+      <a href="/swagger" target="_blank" rel="noopener">API (Swagger)</a>
+    </nav>
+    <div id="sessao" class="sessao" hidden>
+      <span id="usuario-nome"></span>
+      <span id="usuario-perfil" class="selo"></span>
+      <button id="sair" class="botao fantasma" type="button">Sair</button>
+    </div>
+  </header>
+
+  <main id="conteudo" class="conteudo" aria-live="polite"></main>
+
+  <div id="aviso" class="aviso" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
