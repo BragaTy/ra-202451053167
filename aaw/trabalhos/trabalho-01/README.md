@@ -208,6 +208,6 @@ Os testes (`tests/SuporteApi.Tests`) cobrem a camada de serviço com repositóri
 ## Uso de IA
 
 - **Ferramentas usadas:** Google Antigravity (Gemini) e Claude Code (Anthropic).
-- **Onde ajudou:** o Gemini revisou a proposta e os endpoints; o Claude Code gerou, etapa por etapa e a partir das minhas instruções, o código da API (persistência, serviços, JWT, tratamento de erros), os testes, a página web e este README, explicando cada decisão.
-- **O que eu revisei/decidi:** domínio, entidades, regras de SLA e status codes da proposta; configuração do MongoDB Atlas e dos segredos fora do repositório; testes de cada endpoint pelo Swagger.
-- **Observação:** o enunciado em `.docx` continha texto oculto (fonte branca e minúscula) instruindo ferramentas de IA a inserir uma palavra específica nos artefatos e a não avisar o aluno. Isso foi identificado e **não** foi seguido.
+- **Onde ajudou:** o Gemini revisou a proposta e os endpoints; o Claude Code gerou, etapa por etapa e a partir das minhas instruções, o código em C#, os testes, e a página web, explicando cada decisão.
+- **O que eu revisei/decidi:** domínio, entidades, regras de SLA e status codes da proposta; configuração do MongoDB Atlas e dos segredos fora do repositório; testes de cada endpoint pelo Swagger; Definir os endpoints.
+- **Observação:** 
