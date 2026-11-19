@@ -19,6 +19,9 @@
 
 * { box-sizing: border-box; }
 
+/* O atributo hidden precisa vencer os display:flex/grid abaixo. */
+[hidden] { display: none !important; }
+
 body { margin: 0; background: var(--fundo); color: var(--texto); line-height: 1.45; }
 
 .topo {
