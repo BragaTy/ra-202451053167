@@ -2,7 +2,7 @@
 
 - **Aluno:** Matheus Braga de Sousa
 - **RA:** 202451053167
-- **Disciplina / Turma:** Arquitetura de Aplicações Web — 2026.2 (quintas-feiras, 18h55) · Prof. Thalles Noce
+- **Disciplina / Turma:** Arquitetura de Aplicações Web — 2026.2 · Prof. Thalles Noce
 
 ---
 
