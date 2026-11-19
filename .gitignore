@@ -1,0 +1,8 @@
+# Arquivos gerados pelo build e configuracoes locais
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+TestResults/
+.env
